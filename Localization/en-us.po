@@ -1,0 +1,236 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en-us\n"
+
+msgid "component.output.path"
+msgstr "Generated VRM file will be exported to \"{0}\""
+
+msgid "component.validation.author"
+msgstr "Authors is required"
+
+msgid "component.validation.license-url"
+msgstr "License URL is invalid"
+
+msgid "component.validation.avatar-root"
+msgstr "The component must be set on root of Avatar"
+
+msgid "component.validation.not-enabled"
+msgstr "VRM file will not be exported due to the component is not enabled"
+
+msgid "component.validation.avatar-thumbnail"
+msgstr "Avatar thumbnail image must be square"
+
+msgid "component.category.metadata"
+msgstr "Metadata"
+
+msgid "component.category.expressions"
+msgstr "Expressions"
+
+msgid "component.category.mtoon"
+msgstr "MToon Options"
+
+msgid "component.category.spring-bone"
+msgstr "Spring Bone Options"
+
+msgid "component.category.constraint"
+msgstr "Constraint Options"
+
+msgid "component.category.debug"
+msgstr "Debug Options"
+
+msgid "component.metadata.information"
+msgstr "Information"
+
+msgid "component.metadata.licenses"
+msgstr "Licenses"
+
+msgid "component.metadata.permissions"
+msgstr "Permissions"
+
+msgid "component.metadata.information.avatar-thumbnail"
+msgstr "Avatar Thumbnail"
+
+msgid "component.metadata.information.authors"
+msgstr "Authors"
+
+msgid "component.metadata.information.version"
+msgstr "Version"
+
+msgid "component.metadata.information.copyright-information"
+msgstr "Copyright Information"
+
+msgid "component.metadata.information.contact-information"
+msgstr "Contact Information"
+
+msgid "component.metadata.information.references"
+msgstr "References"
+
+msgid "component.metadata.information.vrchat.retrieve"
+msgstr "Retrieve Metadata via VRChat API"
+
+msgid "component.metadata.information.vrchat.enable-contact-information"
+msgstr "Enable VRChat User Link as Contact Information"
+
+msgid "component.metadata.information.vrchat.cancel"
+msgstr "Cancel"
+
+msgid "component.metadata.information.vrchat.error.authorization"
+msgstr "Failed to authorize VRChat. Try sign-in from VRChat SDK control panel."
+
+msgid "component.metadata.licenses.license-url"
+msgstr "License URL"
+
+msgid "component.metadata.licenses.third-party-license"
+msgstr "Third Party License"
+
+msgid "component.metadata.licenses.other-license-url"
+msgstr "Other License URL"
+
+msgid "component.metadata.permissions.avatar-permission"
+msgstr "Avatar Permission"
+
+msgid "component.metadata.permissions.commercial-usage"
+msgstr "Commercial Usage"
+
+msgid "component.metadata.permissions.credit-notation"
+msgstr "Credit Notation"
+
+msgid "component.metadata.permissions.modification"
+msgstr "Modification"
+
+msgid "component.metadata.permissions.allow.header"
+msgstr "Allow Configuration"
+
+msgid "component.metadata.permissions.allow.redistribution"
+msgstr "Allow Redistribution"
+
+msgid "component.metadata.permissions.allow.excessively-violent-usage"
+msgstr "Allow Excessively Violent Usage"
+
+msgid "component.metadata.permissions.allow.excessively-sexual-usage"
+msgstr "Allow Excessively Sexual Usage"
+
+msgid "component.metadata.permissions.allow.political-or-religious-usage"
+msgstr "Allow Political or Religious Usage"
+
+msgid "component.metadata.permissions.allow.antisocial-or-hate-usage"
+msgstr "Allow Antisocial or Hate Usage"
+
+msgid "component.expression.preset"
+msgstr "Preset"
+
+msgid "component.expression.custom"
+msgstr "Custom"
+
+msgid "component.expression.preset.happy"
+msgstr "Happy"
+
+msgid "component.expression.preset.angry"
+msgstr "Angry"
+
+msgid "component.expression.preset.sad"
+msgstr "Sad"
+
+msgid "component.expression.preset.relaxed"
+msgstr "Relaxed"
+
+msgid "component.expression.preset.surprised"
+msgstr "Surprised"
+
+msgid "component.expression.preset.from-mmd"
+msgstr "Set Preset Expression from MMD Compatible"
+
+msgid "component.expression.preset.reset-all"
+msgstr "Reset All Preset Expressions"
+
+msgid "component.expression.name"
+msgstr "Expression Name"
+
+msgid "component.expression.type"
+msgstr "Base Type"
+
+msgid "component.expression.type.blend-shape"
+msgstr "BlendShape"
+
+msgid "component.expression.type.animation-clip"
+msgstr "AnimationClip"
+
+msgid "component.expression.property.header"
+msgstr "Expression Options"
+
+msgid "component.expression.property.type.none"
+msgstr "None"
+
+msgid "component.expression.property.type.block"
+msgstr "Block"
+
+msgid "component.expression.property.type.blend"
+msgstr "Blend"
+
+msgid "component.expression.property.override.blink"
+msgstr "Override Blink"
+
+msgid "component.expression.property.override.look-at"
+msgstr "Override LookAt"
+
+msgid "component.expression.property.override.mouth"
+msgstr "Override Mouth"
+
+msgid "component.expression.property.is-binary"
+msgstr "Binary Transition"
+
+msgid "component.mtoon.enable.rim-light"
+msgstr "Enable RimLight"
+
+msgid "component.mtoon.enable.mat-cap"
+msgstr "Enable MatCap"
+
+msgid "component.mtoon.enable.outline"
+msgstr "Enable Outline"
+
+msgid "component.mtoon.enable.bake-alpha-mask"
+msgstr "Enable Baking Alpha Mask Texture"
+
+msgid "component.spring-bone.exclude.colliders"
+msgstr "Excluded Spring Bone Colliders"
+
+msgid "component.spring-bone.exclude.bones"
+msgstr "Excluded Spring Bones"
+
+msgid "component.constraint.exclude.constraints"
+msgstr "Excluded Constraints"
+
+msgid "component.debug.make-all-node-names-unique"
+msgstr "Make All Node Names Unique"
+
+msgid "component.debug.enable-vertex-color-output"
+msgstr "Enable Vertex Color Output"
+
+msgid "component.debug.disable-vertex-color-on-liltoon"
+msgstr "Disable Vertex Color on lilToon"
+
+msgid "component.debug.enable-generate-json"
+msgstr "Enable Generating glTF JSON File"
+
+msgid "component.debug.delete-temporary-files"
+msgstr "Delete Temporary Object Files"
+
+msgid "component.debug.ktx-tool-path"
+msgstr "KTX Tool Path"
+
+msgid "component.runtime.error.validation.not-attached"
+msgstr "Building VRM file will be skipped due to the component is not attached"
+
+msgid "component.runtime.error.validation.not-enabled"
+msgstr "Building VRM file will be skipped due to the component is not enabled"
+
+msgid "component.runtime.error.validation.author"
+msgstr "Building VRM file will be skipped due to required authors property is empty"
+
+msgid "component.runtime.error.validation.license-url"
+msgstr "Building VRM file will be skipped due to required license URL property is empty or invalid"
+
+msgid "component.runtime.error.validation.smr"
+msgstr "Building VRM file will be skipped due to corrupted SkinnedMeshRenderer found"

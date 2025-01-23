@@ -1,0 +1,17 @@
+{
+  "name": "com.github.hkrn.ndmf-vrm-exporter",
+  "displayName": "NDMF VRM Exporter",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "description": "NDMF Plugin to export the avatar as VRM 1.0 model.",
+  "author": {
+    "name": "hkrn",
+    "url": "https://github.com/hkrn/"
+  },
+  "url": "https://github.com/hkrn/ndmf-vrm-exporter",
+  "repo": "https://hkrn.github.io/vpm.json",
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.7.0",
+    "nadena.dev.ndmf": "^1.6.0"
+  }
+}

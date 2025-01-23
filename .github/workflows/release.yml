@@ -1,0 +1,89 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Validate Repository Configuration
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      config_package: ${{ steps.config_package.outputs.configPackage }}
+    steps:
+    # Ensure that required repository variable has been created for the Package
+    - name: Validate Package Config
+      id: config_package
+      run: |
+        if [ "${{ vars.PACKAGE_NAME }}" != "" ]; then
+          echo "configPackage=true" >> $GITHUB_OUTPUT;
+        else
+          echo "configPackage=false" >> $GITHUB_OUTPUT;
+        fi
+
+  # Build and release the Package
+  # If the repository is not configured properly, this job will be skipped
+  build:
+    needs: config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: needs.config.outputs.config_package == 'true'
+    steps:
+
+      # Checkout Local Repository
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+
+      # Get the Package version based on the package.json file
+      - name: Get Version
+        id: version
+        uses: zoexx/github-action-json-file-properties@d02f28167f05bf70cd75352b11c25a4e8c39bf38
+        with:
+            file_path: "package.json"
+            prop_path: "version"
+
+      # Configure the Environment Variables needed for releasing the Package
+      - name: Set Environment Variables
+        run: |
+          echo "zipFile=${{ vars.PACKAGE_NAME }}-${{ steps.version.outputs.value }}".zip >> $GITHUB_ENV
+          echo "unityPackage=${{ vars.PACKAGE_NAME }}-${{ steps.version.outputs.value }}.unitypackage" >> $GITHUB_ENV
+          echo "version=${{ steps.version.outputs.value }}" >> $GITHUB_ENV
+
+      # Zip the Package for release
+      - name: Archive Release
+        uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554
+        with:
+          type: 'zip'
+          filename: '${{ env.zipFile }}'
+          exclusions: '*.git* .editorconfig'
+
+      # Build a list of .meta files for future use
+      - name: Track Package Meta Files
+        run: find "./" -name \*.meta >> metaList
+
+      # Make a UnityPackage version of the Package for release
+      - name: Create UnityPackage
+        uses: pCYSl5EDgo/create-unitypackage@b5c57408698b1fab8b3a84d4b67f767b8b7c0be9
+        with:
+          package-path: ${{ env.unityPackage }}
+          include-files: metaList
+
+      # Make a release tag of the version from the package.json file
+      - name: Create Tag
+        id: tag_version
+        uses: rickstaa/action-create-tag@a1c7777fcb2fee4f19b0f283ba888afa11678b72
+        with:
+          tag: "${{ env.version }}"
+
+      # Publish the Release to GitHub
+      - name: Make Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
+        with:
+          files: |
+            ${{ env.zipFile }}
+            ${{ env.unityPackage }}
+            package.json
+          tag_name: ${{ env.version }}
