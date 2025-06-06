@@ -4199,7 +4199,7 @@ namespace com.github.hkrn
                         {
                             Node = nodeID.Value,
                             HitRadius = hitRadius,
-                            Stiffness = immobile + stiffness * stiffnessFactor,
+                            Stiffness = Mathf.Clamp((immobile + stiffness * stiffnessFactor), 0f, 4f),
                             GravityPower = gravity,
                             GravityDir = -System.Numerics.Vector3.UnitY,
                             DragForce = Mathf.Clamp01(immobile + pull * pullFactor),
