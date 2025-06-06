@@ -2092,7 +2092,7 @@ namespace com.github.hkrn
             }
 
             var vrmExporter =
-                new VrmRootExporter(_gameObject, _assetSaver, _transformNodeIDs, allMorphTargets, _extensionsUsed);
+                new VrmRootExporter(_gameObject, _assetSaver, _transformNodeIDs, allMorphTargets, _extensionsUsed, _materialExporter);
             var thumbnailImage = gltf.ObjectID.Null;
             var component = _gameObject.GetComponent<NdmfVrmExporterComponent>();
             if (component.thumbnail)
@@ -2580,6 +2580,19 @@ namespace com.github.hkrn
                             });
                         }
                     }
+
+                    if (shaderName == "VRM10/MToon10"){
+                        // MToon10の場合はそのままのテクスチャを使用
+                        var mainTexture = subMeshMaterial.GetTexture(Shader.PropertyToID("_MainTex"));
+                        if (mainTexture)
+                        {
+                            _materialMToonTextures.Add(subMeshMaterial, new MToonTexture
+                            {
+                                MainTexture = mainTexture,
+                                MainTextureInfo = material.PbrMetallicRoughness!.BaseColorTexture!,
+                            });
+                        }
+                    }
 #endif // NVE_HAS_LILTOON
                 }
 
@@ -2649,13 +2662,15 @@ namespace com.github.hkrn
 
             public VrmRootExporter(GameObject gameObject, IAssetSaver assetSaver,
                 IDictionary<Transform, gltf.ObjectID> transformNodeIDs,
-                IDictionary<string, (gltf.ObjectID, int)> allMorphTargets, ISet<string> extensionUsed)
+                IDictionary<string, (gltf.ObjectID, int)> allMorphTargets, ISet<string> extensionUsed,
+                GltfMaterialExporter materialExporter)
             {
                 _gameObject = gameObject;
                 _assetSaver = assetSaver;
                 _allMorphTargets = ImmutableDictionary.CreateRange(allMorphTargets);
                 _transformNodeIDs = ImmutableDictionary.CreateRange(transformNodeIDs);
                 _extensionUsed = extensionUsed;
+                _materialExporter = materialExporter;
             }
 
             public vrm.core.Core ExportCore(gltf.ObjectID thumbnailImage)
@@ -3092,6 +3107,55 @@ namespace com.github.hkrn
                     GIEqualizationFactor = 1.0f,
                     MatcapFactor = System.Numerics.Vector3.Zero
                 };
+                if (material.shader.name == "VRM10/MToon10"){
+                    // MToon10の場合は全てのプロパティをそのまま適応
+                    
+                    // 基本設定
+                    mtoon.ShadeColorFactor = material.GetColor("_ShadeColor").ToVector3();
+                    mtoon.ShadingShiftFactor = material.GetFloat("_ShadeShift");
+                    mtoon.ShadingToonyFactor = material.GetFloat("_ShadeToony");
+                    mtoon.GIEqualizationFactor = material.GetFloat("_GiIntensity");
+
+                    // リムライト設定
+                    if (material.GetFloat("_RimLightingMix") > 0)
+                    {
+                        mtoon.ParametricRimColorFactor = material.GetColor("_RimColor").ToVector3();
+                        mtoon.RimLightingMixFactor = material.GetFloat("_RimLightingMix");
+                        mtoon.ParametricRimFresnelPowerFactor = material.GetFloat("_RimFresnelPower");
+                        mtoon.ParametricRimLiftFactor = material.GetFloat("_RimLift");
+                    }
+
+                    // アウトライン設定
+                    if (material.GetFloat("_OutlineWidthMode") > 0)
+                    {
+                        mtoon.OutlineWidthMode = (vrm.mtoon.OutlineWidthMode)material.GetFloat("_OutlineWidthMode");
+                        mtoon.OutlineWidthFactor = material.GetFloat("_OutlineWidth");
+                        mtoon.OutlineColorFactor = material.GetColor("_OutlineColor").ToVector3();
+                        mtoon.OutlineLightingMixFactor = material.GetFloat("_OutlineLightingMix");
+                    }
+
+                    // テクスチャ設定
+                    if (material.GetTexture("_MainTex") != null)
+                    {
+                        mtoon.ShadeMultiplyTexture = mToonTexture.MainTextureInfo;
+                        mtoon.RimMultiplyTexture = _materialExporter.ExportTextureInfoMToon(material, material.GetTexture("_RimTexture"), ColorSpace.Linear, false);
+                        mtoon.OutlineWidthMultiplyTexture = _materialExporter.ExportTextureInfoMToon(material, material.GetTexture("_OutlineWidthTexture"), ColorSpace.Linear, false);
+                        mtoon.UVAnimationMaskTexture = _materialExporter.ExportTextureInfoMToon(material, material.GetTexture("_UvAnimationMaskTexture"), ColorSpace.Linear, false);
+                    }
+
+                    // エミッション設定
+                    if (material.GetFloat("_EmissionMode") > 0)
+                    {
+                        mtoon.ParametricRimColorFactor = material.GetColor("_EmissionColor").ToVector3();
+                        mtoon.RimMultiplyTexture = _materialExporter.ExportTextureInfoMToon(material, material.GetTexture("_EmissionMap"), ColorSpace.Linear, false);
+                    }
+
+                    // マテリアル設定
+                    mtoon.RenderQueueOffsetNumber = material.renderQueue;
+                    mtoon.TransparentWithZWrite = material.GetFloat("_ZWrite") > 0;
+
+                    return mtoon;
+                }
 #if NVE_HAS_LILTOON
                 var so = new SerializedObject(material);
                 so.Update();
@@ -4265,6 +4329,7 @@ namespace com.github.hkrn
             private readonly IImmutableDictionary<string, (gltf.ObjectID, int)> _allMorphTargets;
             private readonly IImmutableDictionary<Transform, gltf.ObjectID> _transformNodeIDs;
             private readonly ISet<string> _extensionUsed;
+            private readonly GltfMaterialExporter _materialExporter;
         }
 
         private sealed class GltfMaterialExporter
@@ -4495,7 +4560,26 @@ namespace com.github.hkrn
             internal gltf.material.TextureInfo? ExportTextureInfoMToon(Material material, Texture? texture,
                 ColorSpace cs, bool needsBlit)
             {
-                return ExportTextureInfoInner(material, texture, cs, blitMaterial: null, needsBlit, mtoon: true);
+                if (texture == null)
+                {
+                    return null;
+                }
+
+                var textureInfo = ExportTextureInfoInner(material, texture, cs, null, needsBlit, true);
+                if (textureInfo == null)
+                {
+                    return null;
+                }
+
+                // MToonのテクスチャ設定を追加
+                var extensions = new Dictionary<string, JToken>();
+                DecorateTextureTransform(material, Shader.PropertyToID("_MainTex"), extensions);
+                if (extensions.Count > 0)
+                {
+                    textureInfo.Extensions = extensions;
+                }
+
+                return textureInfo;
             }
 
             private gltf.material.TextureInfo? ExportTextureInfo(Material material, Texture? texture,
