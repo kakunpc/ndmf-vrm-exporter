@@ -4697,6 +4697,16 @@ namespace com.github.hkrn
                     }
 
                     var ro = ctx.AvatarRootObject;
+
+                    // サムネイルがない場合はサムネイルを撮影して適応する
+
+                    if (component.thumbnail == null)
+                    {
+                        // thumbnail がない場合は、撮影する
+                        var thumbnail = CreateAvatarThumbnail(ro.GetComponent<VRC_AvatarDescriptor>());
+                        component.thumbnail = thumbnail;
+                    }
+
                     var basePath = AssetPathUtils.GetOutputPath(ro);
                     Directory.CreateDirectory(basePath);
                     using var stream = new MemoryStream();
@@ -4727,6 +4737,63 @@ namespace com.github.hkrn
                         }
                     }
                 });
+        }
+
+        private Texture2D CreateAvatarThumbnail(VRC_AvatarDescriptor avatar)
+        {
+            // カメラを作りアバターを撮影する
+            var camera = new GameObject("Camera");
+            var rt = RenderTexture.GetTemporary(512, 512, 24);
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+
+            List<GameObject> hideAvatars = new List<GameObject>();
+
+            try
+            {
+                // 見つけたアバターを非表示にする
+                var avatars = Object.FindObjectsOfType<VRCAvatarDescriptor>();
+                foreach (var otherAvatar in avatars)
+                {
+                    if (!otherAvatar.gameObject.activeSelf || avatar == otherAvatar) continue;
+                    hideAvatars.Add(otherAvatar.gameObject);
+                    otherAvatar.gameObject.SetActive(false);
+                }
+
+                var cam = camera.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.Color;
+                cam.backgroundColor = Color.white;
+                cam.orthographic = true;
+                cam.orthographicSize = 0.2f;
+
+                cam.targetTexture = rt;
+
+                var p = camera.transform.position;
+                var avatarPos = avatar.transform.position;
+                p.x = avatarPos.x;
+                p.y = avatar.ViewPosition.y;
+                p.z = avatarPos.z + 10;
+                camera.transform.position = p;
+                camera.transform.rotation = Quaternion.Euler(0, 180, 0);
+                cam.Render();
+
+                RenderTexture.active = rt;
+                tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                tex.Apply();
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                Object.DestroyImmediate(camera);
+                RenderTexture.ReleaseTemporary(rt);
+
+                // もとに戻す
+                foreach (var otherAvatar in hideAvatars)
+                {
+                    otherAvatar.SetActive(true);
+                }
+            }
+
+            return tex;
         }
 
         private static void CheckAllSkinnedMeshRenderers(Transform parent, ref List<SkinnedMeshRenderer> corrupted)
