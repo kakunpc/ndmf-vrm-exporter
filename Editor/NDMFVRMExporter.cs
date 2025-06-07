@@ -2138,15 +2138,6 @@ namespace com.github.hkrn
                 var constraint = vrmExporter.ExportNodeConstraint(transform, immobileNodeID);
                 if (constraint == null)
                     continue;
-
-                var target = GetSourceNodeID(constraint);
-
-                // 自身への参照は循環参照なのでスキップ
-                if (target.ID == nodeID.ID)
-                {
-                    continue;
-                }
-
                 constraintList.Add(node, constraint);
             }
 
@@ -2156,16 +2147,8 @@ namespace com.github.hkrn
                 var (node, constraint) = constraintData;
                 var visitedNodes = new HashSet<Transform>();
                 var constraintChain = new List<(Transform node, string constraintType)>();
-                if (HasCircularDependency(constraint, visitedNodes, constraintChain))
+                if (HasCircularDependency(constraint, visitedNodes, constraintChain, constraintList))
                 {
-                    if (constraintChain.Count == 0)
-                    {
-                        Debug.LogWarning(
-                            $"Circular dependency detected but constraint chain is empty.\n" +
-                            $"This might indicate an issue with the constraint settings.");
-                        continue;
-                    }
-
                     var chainInfo = string.Join(" -> ", constraintChain.Select(x => $"{x.node.name} ({x.constraintType})"));
                     Debug.LogWarning(
                         $"Circular dependency detected in constraint node:{node.Name} chain: {chainInfo}\n" +
@@ -4688,7 +4671,7 @@ namespace com.github.hkrn
         private readonly GltfMaterialExporter _materialExporter;
 
         private bool HasCircularDependency(vrm.constraint.NodeConstraint constraint, HashSet<Transform> visitedNodes,
-            List<(Transform node, string constraintType)> constraintChain)
+            List<(Transform node, string constraintType)> constraintChain, IDictionary<gltf.node.Node, vrm.constraint.NodeConstraint> constraintList)
         {
             var sourceNodeID = GetSourceNodeID(constraint);
             var sourceTransform = GetTransformFromNodeID(sourceNodeID);
@@ -4704,8 +4687,8 @@ namespace com.github.hkrn
                 {
                     // 循環部分のみを保持
                     constraintChain.RemoveRange(0, cycleStartIndex);
+                    return true;
                 }
-                return true;
             }
 
             // 訪問済みノードに追加
@@ -4718,7 +4701,7 @@ namespace com.github.hkrn
                 var nextConstraint = GetConstraintForTransform(sourceTransform);
                 if (nextConstraint != null)
                 {
-                    if (HasCircularDependency(nextConstraint, visitedNodes, constraintChain))
+                    if (HasCircularDependency(nextConstraint, visitedNodes, constraintChain, constraintList))
                     {
                         return true;
                     }
@@ -4728,19 +4711,34 @@ namespace com.github.hkrn
                 if (constraint.Constraint.Aim != null)
                 {
                     var aimSource = GetTransformFromNodeID(constraint.Constraint.Aim.Source);
-                    if (aimSource != null)
+                    if (aimSource != null && !visitedNodes.Contains(aimSource))
                     {
-                        if (visitedNodes.Contains(aimSource))
-                        {
-                            constraintChain.Add((aimSource, "Aim"));
-                            return true;
-                        }
                         visitedNodes.Add(aimSource);
                         constraintChain.Add((aimSource, "Aim"));
                         try
                         {
+                            // 親の制約をチェック
+                            var parent = aimSource.parent;
+                            while (parent != null)
+                            {
+                                // constraintListに含まれる親の制約をチェック
+                                var parentNodeID = _transformNodeIDs.FirstOrDefault(x => x.Key == parent).Value;
+                                if (parentNodeID.ID != uint.MaxValue)
+                                {
+                                    var parentNode = _root.Nodes![(int)parentNodeID.ID];
+                                    if (constraintList.TryGetValue(parentNode, out var parentConstraint))
+                                    {
+                                        if (HasCircularDependency(parentConstraint, visitedNodes, constraintChain, constraintList))
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                parent = parent.parent;
+                            }
+
                             var aimConstraint = GetConstraintForTransform(aimSource);
-                            if (aimConstraint != null && HasCircularDependency(aimConstraint, visitedNodes, constraintChain))
+                            if (aimConstraint != null && HasCircularDependency(aimConstraint, visitedNodes, constraintChain, constraintList))
                             {
                                 return true;
                             }
@@ -4755,19 +4753,34 @@ namespace com.github.hkrn
                 if (constraint.Constraint.Roll != null)
                 {
                     var rollSource = GetTransformFromNodeID(constraint.Constraint.Roll.Source);
-                    if (rollSource != null)
+                    if (rollSource != null && !visitedNodes.Contains(rollSource))
                     {
-                        if (visitedNodes.Contains(rollSource))
-                        {
-                            constraintChain.Add((rollSource, "Roll"));
-                            return true;
-                        }
                         visitedNodes.Add(rollSource);
                         constraintChain.Add((rollSource, "Roll"));
                         try
                         {
+                            // 親の制約をチェック
+                            var parent = rollSource.parent;
+                            while (parent != null)
+                            {
+                                // constraintListに含まれる親の制約をチェック
+                                var parentNodeID = _transformNodeIDs.FirstOrDefault(x => x.Key == parent).Value;
+                                if (parentNodeID.ID != uint.MaxValue)
+                                {
+                                    var parentNode = _root.Nodes![(int)parentNodeID.ID];
+                                    if (constraintList.TryGetValue(parentNode, out var parentConstraint))
+                                    {
+                                        if (HasCircularDependency(parentConstraint, visitedNodes, constraintChain, constraintList))
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                parent = parent.parent;
+                            }
+
                             var rollConstraint = GetConstraintForTransform(rollSource);
-                            if (rollConstraint != null && HasCircularDependency(rollConstraint, visitedNodes, constraintChain))
+                            if (rollConstraint != null && HasCircularDependency(rollConstraint, visitedNodes, constraintChain, constraintList))
                             {
                                 return true;
                             }
@@ -4782,19 +4795,34 @@ namespace com.github.hkrn
                 if (constraint.Constraint.Rotation != null)
                 {
                     var rotationSource = GetTransformFromNodeID(constraint.Constraint.Rotation.Source);
-                    if (rotationSource != null)
+                    if (rotationSource != null && !visitedNodes.Contains(rotationSource))
                     {
-                        if (visitedNodes.Contains(rotationSource))
-                        {
-                            constraintChain.Add((rotationSource, "Rotation"));
-                            return true;
-                        }
                         visitedNodes.Add(rotationSource);
                         constraintChain.Add((rotationSource, "Rotation"));
                         try
                         {
+                            // 親の制約をチェック
+                            var parent = rotationSource.parent;
+                            while (parent != null)
+                            {
+                                // constraintListに含まれる親の制約をチェック
+                                var parentNodeID = _transformNodeIDs.FirstOrDefault(x => x.Key == parent).Value;
+                                if (parentNodeID.ID != uint.MaxValue)
+                                {
+                                    var parentNode = _root.Nodes![(int)parentNodeID.ID];
+                                    if (constraintList.TryGetValue(parentNode, out var parentConstraint))
+                                    {
+                                        if (HasCircularDependency(parentConstraint, visitedNodes, constraintChain, constraintList))
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                parent = parent.parent;
+                            }
+
                             var rotationConstraint = GetConstraintForTransform(rotationSource);
-                            if (rotationConstraint != null && HasCircularDependency(rotationConstraint, visitedNodes, constraintChain))
+                            if (rotationConstraint != null && HasCircularDependency(rotationConstraint, visitedNodes, constraintChain, constraintList))
                             {
                                 return true;
                             }
