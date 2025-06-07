@@ -2128,10 +2128,79 @@ namespace com.github.hkrn
                 _root.Nodes.First().Children!.Add(immobileNodeID);
             }
 
+            Dictionary<Transform, Transform> constraintTransforms = new Dictionary<Transform, Transform>();
+            // すべてのConstraintを取得して処理する
+            foreach (var (transform, _) in _transformNodeIDs)
+            {
+                if (component.excludedConstraintTransforms.Contains(transform))
+                    continue;
+                if (transform.TryGetComponent<VRCConstraintBase>(out var vrcConstraint) &&
+                    vrcConstraint.Sources.Count >= 1)
+                {
+                    var source = vrcConstraint.Sources.First();
+                    constraintTransforms[transform] = source.SourceTransform.transform;
+                }
+                else if (transform.TryGetComponent<IConstraint>(out var constraint) && constraint.sourceCount >= 1)
+                {
+                    var source = constraint.GetSource(0);
+                    constraintTransforms[transform] = source.sourceTransform;
+                }
+                else if (transform.TryGetComponent<VRCAimConstraint>(out var vrcAimConstraint) &&
+                         vrcAimConstraint.Sources.Count == 1)
+                {
+                    var source = vrcAimConstraint.Sources.First();
+                    constraintTransforms[transform] = source.SourceTransform.transform;
+                }
+                else if (transform.TryGetComponent<AimConstraint>(out var aimConstraint) &&
+                         aimConstraint.sourceCount == 1)
+                {
+                    var source = aimConstraint.GetSource(0);
+                    constraintTransforms[transform] = source.sourceTransform;
+                }
+                else if (transform.TryGetComponent<VRCRotationConstraint>(out var vrcRotationConstraint) &&
+                         vrcRotationConstraint.Sources.Count >= 1)
+                {
+                    var source = vrcRotationConstraint.Sources.First();
+                    constraintTransforms[transform] = source.SourceTransform;
+                }
+                else if (transform.TryGetComponent<RotationConstraint>(out var rotationConstraint) &&
+                         rotationConstraint.sourceCount == 1)
+                {
+                    var source = rotationConstraint.GetSource(0);
+                    constraintTransforms[transform] = source.sourceTransform;
+                }
+                else if (transform.TryGetComponent<VRCPositionConstraint>(out var vrcPositionConstraint) &&
+                         vrcPositionConstraint.Sources.Count >= 1)
+                {
+                    var source = vrcPositionConstraint.Sources.First();
+                    constraintTransforms[transform] = source.SourceTransform;
+                }
+                else if (transform.TryGetComponent<PositionConstraint>(out var positionConstraint) &&
+                         positionConstraint.sourceCount >= 1)
+                {
+                    var source = positionConstraint.GetSource(0);
+                    constraintTransforms[transform] = source.sourceTransform;
+                }
+            }
+
             foreach (var (transform, nodeID) in _transformNodeIDs)
             {
                 if (component.excludedConstraintTransforms.Contains(transform))
                     continue;
+
+                if (!constraintTransforms.TryGetValue(transform, out var sourceTransform))
+                {
+                    continue;
+                }
+
+                // 循環参照チェック
+                if (IsCircularReference(transform, sourceTransform, constraintTransforms))
+                {
+                    Debug.LogWarning(
+                        $"Circular reference detected in constraint for {transform.name}. Skipping export.");
+                    continue;
+                }
+
                 var node = _root.Nodes![(int)nodeID.ID];
                 var constraint = vrmExporter.ExportNodeConstraint(transform, immobileNodeID);
                 if (constraint == null)
@@ -2163,6 +2232,56 @@ namespace com.github.hkrn
 
                 materialID++;
             }
+        }
+
+        // 循環参照チェック
+        bool IsCircularReference(Transform start, Transform src, Dictionary<Transform, Transform> constraintTransforms)
+        {
+            var current = src;
+
+            // currentの親を見ていく
+            // 親がconstraintTransformsに含まれていたら、その親が見ているコンストレイント先も見ていく
+            while (current != null)
+            {
+                // Startと一致したら循環参照
+                if (current == start)
+                {
+                    return true;
+                }
+
+                // currentの親のTransformをNext
+                var parent = current.parent;
+                if (parent == null)
+                {
+                    // 親がいない場合、終了
+                    return false;
+                }
+
+                // 親と一致してたら終了
+                if (parent == start)
+                {
+                    return true; // 親がStartと一致した場合も循環参照
+                }
+
+                // 親がConstraintを持っていた場合はそれをチェックしていく
+                if (constraintTransforms.TryGetValue(parent, out var parentTarget))
+                {
+                    if (parentTarget == start)
+                    {
+                        return true; // 親がStartと一致した場合も循環参照
+                    }
+
+                    var result = IsCircularReference(start, parentTarget, constraintTransforms);
+                    if (result)
+                    {
+                        return true; // 循環参照が見つかった
+                    }
+                }
+
+                current = parent;
+            }
+
+            return false; // 循環参照はなかった
         }
 
         private void ConvertAllTexturesToKtx(string ktxToolPath)
