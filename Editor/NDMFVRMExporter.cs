@@ -2128,6 +2128,8 @@ namespace com.github.hkrn
                 _root.Nodes.First().Children!.Add(immobileNodeID);
             }
 
+            var constraintList = new Dictionary<gltf.node.Node, vrm.constraint.NodeConstraint>();
+
             foreach (var (transform, nodeID) in _transformNodeIDs)
             {
                 if (component.excludedConstraintTransforms.Contains(transform))
@@ -2136,6 +2138,45 @@ namespace com.github.hkrn
                 var constraint = vrmExporter.ExportNodeConstraint(transform, immobileNodeID);
                 if (constraint == null)
                     continue;
+
+                var target = GetSourceNodeID(constraint);
+
+                // 自身への参照は循環参照なのでスキップ
+                if (target.ID == nodeID.ID)
+                {
+                    continue;
+                }
+
+                constraintList.Add(node, constraint);
+            }
+
+            // 循環参照チェック
+            var visitedNodes = new HashSet<Transform>();
+            var constraintChain = new List<(Transform node, string constraintType)>();
+            foreach (var constraintData in constraintList)
+            {
+                var (node, constraint) = constraintData;
+                visitedNodes.Clear();
+                constraintChain.Clear();
+                if (HasCircularDependency(constraint, visitedNodes, constraintChain))
+                {
+                    if (constraintChain.Count == 0)
+                    {
+                        Debug.LogWarning(
+                            $"Circular dependency detected but constraint chain is empty.\n" +
+                            $"This might indicate an issue with the constraint settings.");
+                        continue;
+                    }
+
+                    var chainInfo = string.Join(" -> ", constraintChain.Select(x => $"{x.node.name} ({x.constraintType})"));
+                    Debug.LogWarning(
+                        $"Circular dependency detected in constraint chain: {chainInfo}\n" +
+                        $"This means that a constraint is trying to reference itself through other constraints.\n" +
+                        $"Please check the constraint settings of the following nodes:\n" +
+                        $"{string.Join("\n", constraintChain.Select(x => $"- {x.node.name} ({x.constraintType})"))}");
+                    continue;
+                }
+
                 node.Extensions ??= new Dictionary<string, JToken>();
                 node.Extensions.Add(VrmcNodeConstraint, vrm.Document.SaveAsNode(constraint));
                 _extensionsUsed.Add(VrmcNodeConstraint);
@@ -4647,6 +4688,133 @@ namespace com.github.hkrn
         private readonly ISet<string> _transformNodeNames;
         private readonly ISet<string> _extensionsUsed;
         private readonly GltfMaterialExporter _materialExporter;
+
+        private bool HasCircularDependency(vrm.constraint.NodeConstraint constraint, HashSet<Transform> visitedNodes,
+            List<(Transform node, string constraintType)> constraintChain)
+        {
+            var sourceNodeID = GetSourceNodeID(constraint);
+            var sourceTransform = GetTransformFromNodeID(sourceNodeID);
+            if (sourceTransform == null)
+                return false;
+
+            // 既に訪問済みのノードに戻ってきた場合、循環参照を検出
+            if (visitedNodes.Contains(sourceTransform))
+            {
+                // 循環参照の開始位置を特定
+                var cycleStartIndex = constraintChain.FindIndex(x => x.node == sourceTransform);
+                if (cycleStartIndex >= 0)
+                {
+                    // 循環部分のみを保持
+                    constraintChain.RemoveRange(0, cycleStartIndex);
+                }
+                return true;
+            }
+
+            // 訪問済みノードに追加
+            visitedNodes.Add(sourceTransform);
+            constraintChain.Add((sourceTransform, GetConstraintType(constraint)));
+
+            try
+            {
+                // このノードの制約を取得して再帰的にチェック
+                var nextConstraint = GetConstraintForTransform(sourceTransform);
+                if (nextConstraint != null)
+                {
+                    if (HasCircularDependency(nextConstraint, visitedNodes, constraintChain))
+                    {
+                        return true;
+                    }
+                }
+
+                // 制約の種類に応じて追加のチェック
+                if (constraint.Constraint.Aim != null)
+                {
+                    var aimSource = GetTransformFromNodeID(constraint.Constraint.Aim.Source);
+                    if (aimSource != null && visitedNodes.Contains(aimSource))
+                    {
+                        return true;
+                    }
+                }
+                if (constraint.Constraint.Roll != null)
+                {
+                    var rollSource = GetTransformFromNodeID(constraint.Constraint.Roll.Source);
+                    if (rollSource != null && visitedNodes.Contains(rollSource))
+                    {
+                        return true;
+                    }
+                }
+                if (constraint.Constraint.Rotation != null)
+                {
+                    var rotationSource = GetTransformFromNodeID(constraint.Constraint.Rotation.Source);
+                    if (rotationSource != null && visitedNodes.Contains(rotationSource))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            finally
+            {
+                // 訪問済みノードから削除
+                visitedNodes.Remove(sourceTransform);
+                constraintChain.RemoveAt(constraintChain.Count - 1);
+            }
+        }
+
+        private gltf.ObjectID GetSourceNodeID(vrm.constraint.NodeConstraint constraint)
+        {
+            if (constraint.Constraint.Aim != null)
+                return constraint.Constraint.Aim.Source;
+            if (constraint.Constraint.Roll != null)
+                return constraint.Constraint.Roll.Source;
+            if (constraint.Constraint.Rotation != null)
+                return constraint.Constraint.Rotation.Source;
+            return gltf.ObjectID.Null;
+        }
+
+        private string GetConstraintType(vrm.constraint.NodeConstraint constraint)
+        {
+            if (constraint.Constraint.Aim != null)
+                return "Aim";
+            if (constraint.Constraint.Roll != null)
+                return "Roll";
+            if (constraint.Constraint.Rotation != null)
+                return "Rotation";
+            return "Unknown";
+        }
+
+        private Transform? GetTransformFromNodeID(gltf.ObjectID nodeID)
+        {
+            foreach (var (transform, id) in _transformNodeIDs)
+            {
+                if (id.Equals(nodeID))
+                    return transform;
+            }
+
+            return null;
+        }
+
+        private vrm.constraint.NodeConstraint? GetConstraintForTransform(Transform transform)
+        {
+            var nodeID = _transformNodeIDs.FirstOrDefault(x => x.Key == transform).Value;
+            if (nodeID.ID == uint.MaxValue)
+                return null;
+
+            var node = _root.Nodes![(int)nodeID.ID];
+            if (node.Extensions == null || !node.Extensions.ContainsKey(VrmcNodeConstraint))
+                return null;
+
+            var settings = new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter>
+                {
+                    new gltf.ObjectIDConverter()
+                }
+            };
+            return JsonConvert.DeserializeObject<vrm.constraint.NodeConstraint>(
+                node.Extensions[VrmcNodeConstraint].ToString(), settings);
+        }
     }
 
     internal sealed class NdmfVrmExporterPlugin : Plugin<NdmfVrmExporterPlugin>
