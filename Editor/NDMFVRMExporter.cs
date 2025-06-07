@@ -2237,51 +2237,67 @@ namespace com.github.hkrn
         // 循環参照チェック
         bool IsCircularReference(Transform start, Transform src, Dictionary<Transform, Transform> constraintTransforms)
         {
-            var current = src;
+            var visited = new HashSet<Transform>();
+            var path = new List<Transform>();
+            return IsCircularReferenceInternal(start, src, constraintTransforms, visited, path);
+        }
 
-            // currentの親を見ていく
-            // 親がconstraintTransformsに含まれていたら、その親が見ているコンストレイント先も見ていく
-            while (current != null)
+        private bool IsCircularReferenceInternal(Transform start, Transform current, Dictionary<Transform, Transform> constraintTransforms, 
+            HashSet<Transform> visited, List<Transform> path)
+        {
+            if (current == null) return false;
+            if (current == start)
             {
-                // Startと一致したら循環参照
-                if (current == start)
+                path.Add(current);
+                LogCircularReferencePath(path);
+                return true;
+            }
+
+            if (visited.Contains(current)) return false;
+            visited.Add(current);
+            path.Add(current);
+
+            // 親のチェック
+            var parent = current.parent;
+            if (parent != null)
+            {
+                if (parent == start)
                 {
+                    path.Add(parent);
+                    LogCircularReferencePath(path);
                     return true;
                 }
 
-                // currentの親のTransformをNext
-                var parent = current.parent;
-                if (parent == null)
+                if (IsCircularReferenceInternal(start, parent, constraintTransforms, visited, path))
                 {
-                    // 親がいない場合、終了
-                    return false;
+                    return true;
                 }
-
-                // 親と一致してたら終了
-                if (parent == start)
-                {
-                    return true; // 親がStartと一致した場合も循環参照
-                }
-
-                // 親がConstraintを持っていた場合はそれをチェックしていく
-                if (constraintTransforms.TryGetValue(parent, out var parentTarget))
-                {
-                    if (parentTarget == start)
-                    {
-                        return true; // 親がStartと一致した場合も循環参照
-                    }
-
-                    var result = IsCircularReference(start, parentTarget, constraintTransforms);
-                    if (result)
-                    {
-                        return true; // 循環参照が見つかった
-                    }
-                }
-
-                current = parent;
             }
 
-            return false; // 循環参照はなかった
+            // コンストレイントのチェック
+            if (constraintTransforms.TryGetValue(current, out var target))
+            {
+                if (target == start)
+                {
+                    path.Add(target);
+                    LogCircularReferencePath(path);
+                    return true;
+                }
+
+                if (IsCircularReferenceInternal(start, target, constraintTransforms, visited, path))
+                {
+                    return true;
+                }
+            }
+
+            path.RemoveAt(path.Count - 1);
+            return false;
+        }
+
+        private void LogCircularReferencePath(List<Transform> path)
+        {
+            var pathString = string.Join(" -> ", path.Select(t => t.name));
+            Debug.LogWarning($"循環参照が検出されました:\n{pathString}");
         }
 
         private void ConvertAllTexturesToKtx(string ktxToolPath)
