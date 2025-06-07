@@ -2242,7 +2242,8 @@ namespace com.github.hkrn
             return IsCircularReferenceInternal(start, src, constraintTransforms, visited, path);
         }
 
-        private bool IsCircularReferenceInternal(Transform start, Transform current, Dictionary<Transform, Transform> constraintTransforms, 
+        private bool IsCircularReferenceInternal(Transform start, Transform current,
+            Dictionary<Transform, Transform> constraintTransforms,
             HashSet<Transform> visited, List<Transform> path)
         {
             if (current == null) return false;
@@ -3735,9 +3736,12 @@ namespace com.github.hkrn
                         Ou = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.ou),
                         Ee = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.E),
                         Oh = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.oh),
-                        Blink = ExportExpressionEyelids(avatarDescriptor, 0),
+                        Blink = ExportExpressionEyelids(avatarDescriptor, 0) ?? BlendshapeTarget(avatarDescriptor,
+                            "Blink"),
                         LookUp = ExportExpressionEyelids(avatarDescriptor, 1),
                         LookDown = ExportExpressionEyelids(avatarDescriptor, 2),
+                        BlinkLeft = BlendshapeTarget(avatarDescriptor, "BlinkL"),
+                        BlinkRight = BlendshapeTarget(avatarDescriptor, "BlinkR"),
                     }
                 };
 #else
@@ -3937,6 +3941,73 @@ namespace com.github.hkrn
                     }
                 };
                 return item;
+            }
+
+            private (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
+            {
+                // skinned mesh listを取得
+                var targetShapeName = blendShapeName
+                    .ToLower()
+                    .Replace("_", "")
+                    .Replace(" ", "")
+                    .Replace("-", "");
+
+                var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
+                // それぞれのスキンメッシュを調べる
+                foreach (var skinnedMesh in skinnedMeshs)
+                {
+                    // スキンメッシュのブレンドシェイプインデックスを取得
+                    var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
+                    for (var i = 0; i < blendShapeCount; ++i)
+                    {
+                        var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
+                            .ToLower()
+                            .Replace("_", "")
+                            .Replace(" ", "")
+                            .Replace("-", "");
+                        if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
+                        {
+                            continue;
+                        }
+
+                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
+                    }
+                }
+
+                return (string.Empty, null);
+            }
+
+            private vrm.core.ExpressionItem? BlendshapeTarget(VRCAvatarDescriptor descriptor, string blendShapeName)
+            {
+                var (blendShapeNameFound, skinnedMesh) = FindBlendShape(descriptor.gameObject, blendShapeName);
+                if (string.IsNullOrEmpty(blendShapeNameFound) || skinnedMesh == null)
+                {
+                    return null;
+                }
+
+                var blendShapeIndex = skinnedMesh.sharedMesh.GetBlendShapeIndex(blendShapeNameFound);
+
+                // ノードIDを取得
+                var nodeId = FindTransformNodeID(skinnedMesh.transform);
+                if (!nodeId.HasValue)
+                {
+                    Debug.LogWarning($"Skinned mesh {skinnedMesh} not found due to inactive");
+                    return null;
+                }
+
+                // vrm.core.ExpressionItemを作成
+                return new vrm.core.ExpressionItem
+                {
+                    MorphTargetBinds = new List<vrm.core.MorphTargetBind>
+                    {
+                        new()
+                        {
+                            Node = nodeId.Value,
+                            Index = new gltf.ObjectID((uint)blendShapeIndex),
+                            Weight = 1.0f,
+                        }
+                    }
+                };
             }
 #endif // NVE_HAS_VRCHAT_AVATAR_SDK
 
@@ -5018,6 +5089,14 @@ namespace com.github.hkrn
                     allExpressionUsedBlendShapeNames.AddRange(property.BlendShapeNames);
                 }
 
+                // 探した
+                var blink = FindBlendShape(component.gameObject, "Blink");
+                if (blink.Item2 != null) allExpressionUsedBlendShapeNames.Add(blink.Item1);
+                var blinkLeft = FindBlendShape(component.gameObject, "BlinkL");
+                if (blinkLeft.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkLeft.Item1);
+                var blinkRight = FindBlendShape(component.gameObject, "BlinkR");
+                if (blinkRight.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkRight.Item1);
+
                 var collectorProperties = new Dictionary<SkinnedMeshRenderer, IList<string>>();
                 foreach (var name in allExpressionUsedBlendShapeNames)
                 {
@@ -5040,6 +5119,41 @@ namespace com.github.hkrn
                 {
                     collector.ModifyProperties(smr, names);
                 }
+            }
+
+
+            private (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
+            {
+                // skinned mesh listを取得
+                var targetShapeName = blendShapeName
+                    .ToLower()
+                    .Replace("_", "")
+                    .Replace(" ", "")
+                    .Replace("-", "");
+
+                var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
+                // それぞれのスキンメッシュを調べる
+                foreach (var skinnedMesh in skinnedMeshs)
+                {
+                    // スキンメッシュのブレンドシェイプインデックスを取得
+                    var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
+                    for (var i = 0; i < blendShapeCount; ++i)
+                    {
+                        var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
+                            .ToLower()
+                            .Replace("_", "")
+                            .Replace(" ", "")
+                            .Replace("-", "");
+                        if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
+                        {
+                            continue;
+                        }
+
+                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
+                    }
+                }
+
+                return (string.Empty, null);
             }
 
             protected override void CollectDependency(NdmfVrmExporterComponent component,
