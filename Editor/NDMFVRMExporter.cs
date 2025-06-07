@@ -2151,13 +2151,11 @@ namespace com.github.hkrn
             }
 
             // 循環参照チェック
-            var visitedNodes = new HashSet<Transform>();
-            var constraintChain = new List<(Transform node, string constraintType)>();
             foreach (var constraintData in constraintList)
             {
                 var (node, constraint) = constraintData;
-                visitedNodes.Clear();
-                constraintChain.Clear();
+                var visitedNodes = new HashSet<Transform>();
+                var constraintChain = new List<(Transform node, string constraintType)>();
                 if (HasCircularDependency(constraint, visitedNodes, constraintChain))
                 {
                     if (constraintChain.Count == 0)
@@ -2170,7 +2168,7 @@ namespace com.github.hkrn
 
                     var chainInfo = string.Join(" -> ", constraintChain.Select(x => $"{x.node.name} ({x.constraintType})"));
                     Debug.LogWarning(
-                        $"Circular dependency detected in constraint chain: {chainInfo}\n" +
+                        $"Circular dependency detected in constraint node:{node.Name} chain: {chainInfo}\n" +
                         $"This means that a constraint is trying to reference itself through other constraints.\n" +
                         $"Please check the constraint settings of the following nodes:\n" +
                         $"{string.Join("\n", constraintChain.Select(x => $"- {x.node.name} ({x.constraintType})"))}");
@@ -4730,25 +4728,82 @@ namespace com.github.hkrn
                 if (constraint.Constraint.Aim != null)
                 {
                     var aimSource = GetTransformFromNodeID(constraint.Constraint.Aim.Source);
-                    if (aimSource != null && visitedNodes.Contains(aimSource))
+                    if (aimSource != null)
                     {
-                        return true;
+                        if (visitedNodes.Contains(aimSource))
+                        {
+                            constraintChain.Add((aimSource, "Aim"));
+                            return true;
+                        }
+                        visitedNodes.Add(aimSource);
+                        constraintChain.Add((aimSource, "Aim"));
+                        try
+                        {
+                            var aimConstraint = GetConstraintForTransform(aimSource);
+                            if (aimConstraint != null && HasCircularDependency(aimConstraint, visitedNodes, constraintChain))
+                            {
+                                return true;
+                            }
+                        }
+                        finally
+                        {
+                            visitedNodes.Remove(aimSource);
+                            constraintChain.RemoveAt(constraintChain.Count - 1);
+                        }
                     }
                 }
                 if (constraint.Constraint.Roll != null)
                 {
                     var rollSource = GetTransformFromNodeID(constraint.Constraint.Roll.Source);
-                    if (rollSource != null && visitedNodes.Contains(rollSource))
+                    if (rollSource != null)
                     {
-                        return true;
+                        if (visitedNodes.Contains(rollSource))
+                        {
+                            constraintChain.Add((rollSource, "Roll"));
+                            return true;
+                        }
+                        visitedNodes.Add(rollSource);
+                        constraintChain.Add((rollSource, "Roll"));
+                        try
+                        {
+                            var rollConstraint = GetConstraintForTransform(rollSource);
+                            if (rollConstraint != null && HasCircularDependency(rollConstraint, visitedNodes, constraintChain))
+                            {
+                                return true;
+                            }
+                        }
+                        finally
+                        {
+                            visitedNodes.Remove(rollSource);
+                            constraintChain.RemoveAt(constraintChain.Count - 1);
+                        }
                     }
                 }
                 if (constraint.Constraint.Rotation != null)
                 {
                     var rotationSource = GetTransformFromNodeID(constraint.Constraint.Rotation.Source);
-                    if (rotationSource != null && visitedNodes.Contains(rotationSource))
+                    if (rotationSource != null)
                     {
-                        return true;
+                        if (visitedNodes.Contains(rotationSource))
+                        {
+                            constraintChain.Add((rotationSource, "Rotation"));
+                            return true;
+                        }
+                        visitedNodes.Add(rotationSource);
+                        constraintChain.Add((rotationSource, "Rotation"));
+                        try
+                        {
+                            var rotationConstraint = GetConstraintForTransform(rotationSource);
+                            if (rotationConstraint != null && HasCircularDependency(rotationConstraint, visitedNodes, constraintChain))
+                            {
+                                return true;
+                            }
+                        }
+                        finally
+                        {
+                            visitedNodes.Remove(rotationSource);
+                            constraintChain.RemoveAt(constraintChain.Count - 1);
+                        }
                     }
                 }
 
