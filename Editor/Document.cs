@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -95,21 +96,7 @@ namespace com.github.hkrn.gltf
     {
         public UnicodeString(string v)
         {
-            var sb = new StringBuilder();
-            foreach (var c in v)
-            {
-                if (c >= 0 && c <= 0x7f)
-                {
-                    sb.Append(c);
-                }
-                else
-                {
-                    sb.Append(@"\u");
-                    sb.Append($"{(int)c:x4}");
-                }
-            }
-
-            Value = sb.ToString();
+            Value = string.Concat(v.Select(c => c > 0x7f ? $"\\u{(int)c:x4}" : c.ToString()));
         }
 
         public string Value { get; init; }
@@ -123,7 +110,7 @@ namespace com.github.hkrn.gltf
 
         public override string ToString()
         {
-            return Value;
+            return Regex.Unescape(Value);
         }
 
         public override int GetHashCode()
@@ -136,7 +123,7 @@ namespace com.github.hkrn.gltf
     {
         public override void WriteJson(JsonWriter writer, UnicodeString? value, JsonSerializer serializer)
         {
-            writer.WriteRawValue($"\"{value!.Value}\"");
+            writer.WriteValue(value!.Value);
         }
 
         public override UnicodeString? ReadJson(JsonReader reader, Type objectType,
@@ -2266,8 +2253,8 @@ namespace com.github.hkrn.gltf
             private static byte[] GetAlignedJson(string json)
             {
                 using var jsonStream = new MemoryStream();
-                using var jsonWriter = new BinaryWriter(jsonStream);
-                jsonWriter.Write(Encoding.ASCII.GetBytes(json));
+                using var jsonWriter = new BinaryWriter(jsonStream, Encoding.UTF8);
+                jsonWriter.Write(Encoding.UTF8.GetBytes(json));
                 while (jsonStream.Position % Alignment != 0)
                 {
                     jsonWriter.Write((byte)0x20);
