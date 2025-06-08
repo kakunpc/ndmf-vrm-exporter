@@ -54,11 +54,11 @@ namespace com.github.hkrn
                 }
 
                 // 探した
-                var blink = FindBlendShape(component.gameObject, "Blink");
+                var blink = Utility.FindBlendShape(component.gameObject, "Blink");
                 if (blink.Item2 != null) allExpressionUsedBlendShapeNames.Add(blink.Item1);
-                var blinkLeft = FindBlendShape(component.gameObject, "BlinkL");
+                var blinkLeft = Utility.FindBlendShape(component.gameObject, "BlinkL");
                 if (blinkLeft.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkLeft.Item1);
-                var blinkRight = FindBlendShape(component.gameObject, "BlinkR");
+                var blinkRight = Utility.FindBlendShape(component.gameObject, "BlinkR");
                 if (blinkRight.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkRight.Item1);
 
                 var collectorProperties = new Dictionary<SkinnedMeshRenderer, IList<string>>();
@@ -85,40 +85,6 @@ namespace com.github.hkrn
                 }
             }
 
-
-            private (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
-            {
-                // skinned mesh listを取得
-                var targetShapeName = blendShapeName
-                    .ToLower()
-                    .Replace("_", "")
-                    .Replace(" ", "")
-                    .Replace("-", "");
-
-                var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
-                // それぞれのスキンメッシュを調べる
-                foreach (var skinnedMesh in skinnedMeshs)
-                {
-                    // スキンメッシュのブレンドシェイプインデックスを取得
-                    var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
-                    for (var i = 0; i < blendShapeCount; ++i)
-                    {
-                        var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
-                            .ToLower()
-                            .Replace("_", "")
-                            .Replace(" ", "")
-                            .Replace("-", "");
-                        if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
-                        {
-                            continue;
-                        }
-
-                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
-                    }
-                }
-
-                return (string.Empty, null);
-            }
 
             protected override void CollectDependency(NdmfVrmExporterComponent component,
                 ComponentDependencyCollector collector)

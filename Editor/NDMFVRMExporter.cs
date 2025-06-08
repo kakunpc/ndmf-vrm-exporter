@@ -2035,12 +2035,12 @@ namespace com.github.hkrn
                         Ou = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.ou),
                         Ee = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.E),
                         Oh = ExportExpressionViseme(avatarDescriptor, VRC_AvatarDescriptor.Viseme.oh),
-                        Blink = ExportExpressionEyelids(avatarDescriptor, 0) ?? BlendshapeTarget(avatarDescriptor,
+                        Blink = ExportExpressionEyelids(avatarDescriptor, 0) ?? BlendShapeTarget(avatarDescriptor,
                             "Blink"),
                         LookUp = ExportExpressionEyelids(avatarDescriptor, 1),
                         LookDown = ExportExpressionEyelids(avatarDescriptor, 2),
-                        BlinkLeft = BlendshapeTarget(avatarDescriptor, "BlinkL"),
-                        BlinkRight = BlendshapeTarget(avatarDescriptor, "BlinkR"),
+                        BlinkLeft = BlendShapeTarget(avatarDescriptor, "BlinkL"),
+                        BlinkRight = BlendShapeTarget(avatarDescriptor, "BlinkR"),
                     }
                 };
 #else
@@ -2242,43 +2242,9 @@ namespace com.github.hkrn
                 return item;
             }
 
-            private (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
+            private vrm.core.ExpressionItem? BlendShapeTarget(VRCAvatarDescriptor descriptor, string blendShapeName)
             {
-                // skinned mesh listを取得
-                var targetShapeName = blendShapeName
-                    .ToLower()
-                    .Replace("_", "")
-                    .Replace(" ", "")
-                    .Replace("-", "");
-
-                var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
-                // それぞれのスキンメッシュを調べる
-                foreach (var skinnedMesh in skinnedMeshs)
-                {
-                    // スキンメッシュのブレンドシェイプインデックスを取得
-                    var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
-                    for (var i = 0; i < blendShapeCount; ++i)
-                    {
-                        var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
-                            .ToLower()
-                            .Replace("_", "")
-                            .Replace(" ", "")
-                            .Replace("-", "");
-                        if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
-                        {
-                            continue;
-                        }
-
-                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
-                    }
-                }
-
-                return (string.Empty, null);
-            }
-
-            private vrm.core.ExpressionItem? BlendshapeTarget(VRCAvatarDescriptor descriptor, string blendShapeName)
-            {
-                var (blendShapeNameFound, skinnedMesh) = FindBlendShape(descriptor.gameObject, blendShapeName);
+                var (blendShapeNameFound, skinnedMesh) =  Utility.FindBlendShape(descriptor.gameObject, blendShapeName);
                 if (string.IsNullOrEmpty(blendShapeNameFound) || skinnedMesh == null)
                 {
                     return null;

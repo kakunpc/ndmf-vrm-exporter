@@ -210,5 +210,41 @@ namespace com.github.hkrn
         }
     }
 
+    internal static class Utility
+    {
+        public static (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
+        {
+            // skinned mesh listを取得
+            var targetShapeName = blendShapeName
+                .ToLower()
+                .Replace("_", "")
+                .Replace(" ", "")
+                .Replace("-", "");
+
+            var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
+            // それぞれのスキンメッシュを調べる
+            foreach (var skinnedMesh in skinnedMeshs)
+            {
+                // スキンメッシュのブレンドシェイプインデックスを取得
+                var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
+                for (var i = 0; i < blendShapeCount; ++i)
+                {
+                    var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
+                        .ToLower()
+                        .Replace("_", "")
+                        .Replace(" ", "")
+                        .Replace("-", "");
+                    if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
+                    {
+                        continue;
+                    }
+
+                    return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
+                }
+            }
+
+            return (string.Empty, null);
+        }
+    }
 }
 #endif // NVE_HAS_NDMF
