@@ -106,7 +106,7 @@ namespace com.github.hkrn
                     PropertyMainThirdBlendMask, ref srcMask3);
             }
 
-            var outTexture = RunBake(srcTexture, hsvgMaterial);
+            var outTexture = RunBake(srcTexture, hsvgMaterial, (Texture2D)mainTex!);
             outTexture.name = $"{mainTexName}_{nameof(AutoBakeMainTexture)}";
             assetSaver.SaveAsset(outTexture);
 
@@ -198,7 +198,7 @@ namespace com.github.hkrn
             hsvgMaterial.SetTexture(PropertyMainSecondBlendMask, referenceMaskTexture);
             hsvgMaterial.SetTexture(PropertyMainThirdBlendMask, referenceMaskTexture);
 
-            var outTexture = RunBake(srcTexture, hsvgMaterial);
+            var outTexture = RunBake(srcTexture, hsvgMaterial, (Texture2D)mainTex!);
             outTexture.name = $"{mainTexName}_{nameof(AutoBakeShadowTexture)}";
             assetSaver.SaveAsset(outTexture);
 
@@ -264,7 +264,7 @@ namespace com.github.hkrn
             {
                 hsvgMaterial.SetTexture(PropertyAlphaMask, srcAlphaMask);
                 AssignMaterialTexture(assetSaver, bufMainTexture, hsvgMaterial, PropertyMainTex, ref srcTexture);
-                outTexture = RunBake(srcTexture, hsvgMaterial);
+                outTexture = RunBake(srcTexture, hsvgMaterial, (Texture2D)mainTex!);
                 outTexture.name = $"{mainTexName}_{nameof(AutoBakeAlphaMask)}";
                 assetSaver.SaveAsset(outTexture);
             }
