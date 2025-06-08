@@ -587,6 +587,214 @@ namespace com.github.hkrn
             }
 
             EditorGUILayout.PropertyField(_expressionCustomBlendShapes, GUIContent.none);
+
+            EditorGUILayout.Separator();
+            if (GUILayout.Button(Translator._("component.expression.custom.mmd")))
+            {
+                void SetFromMmdExpression(string blendShape, bool isBinary)
+                {
+                    // すでに存在していたら無視
+                    if (go.expressionCustomBlendShapes.Exists(x => x.expressionName == blendShape))
+                    {
+                        return;
+                    }
+
+                    var (targetBlendShapeName, skinnedMeshRenderer) = Utility.FindBlendShape(go.gameObject, blendShape);
+
+                    if (string.IsNullOrEmpty(targetBlendShapeName) ||
+                        targetBlendShapeName != blendShape) // 完全一致
+                    {
+                        return;
+                    }
+
+
+                    var value = new VrmExpressionProperty
+                    {
+                        baseType = VrmExpressionProperty.BaseType.BlendShape,
+                        gameObject = skinnedMeshRenderer!.gameObject,
+                        blendShapeName = targetBlendShapeName,
+                        expressionName = blendShape,
+                        overrideBlink = vrm.core.ExpressionOverrideType.Block,
+                        overrideLookAt = vrm.core.ExpressionOverrideType.Block,
+                        overrideMouth = vrm.core.ExpressionOverrideType.Block,
+                        isBinary = isBinary,
+                        isPreset = false
+                    };
+
+                    go.expressionCustomBlendShapes.Add(value);
+                }
+
+                var mmdMorphs = new[]
+                {
+                    "通常",
+                    "まばたき",
+                    "笑い",
+                    "ウィンク",
+                    "ウィンク右",
+                    "ウィンク２",
+                    "ウィンク２右",
+                    "なごみ",
+                    "はぅ",
+                    "びっくり",
+                    "じと目",
+                    "ｷﾘｯ",
+                    "はちゅ目",
+                    "はちゅ目縦潰れ",
+                    "はちゅ目横潰れ",
+                    "星目",
+                    "はぁと",
+                    "瞳小",
+                    "瞳縦潰れ",
+                    "光下",
+                    "恐ろしい子！",
+                    "ハイライト消し",
+                    "映り込み消し",
+                    "あ",
+                    "い",
+                    "う",
+                    "え",
+                    "お",
+                    "あ２",
+                    "ワ",
+                    "ω",
+                    "ω□",
+                    "にやり",
+                    "にやり2",
+                    "にっこり",
+                    "ぺろっ",
+                    "てへぺろ",
+                    "てへぺろ２",
+                    "口角上げ",
+                    "口角下げ",
+                    "口横広げ",
+                    "歯無し上",
+                    "歯無し下",
+                    "ハンサム",
+                    "真面目",
+                    "困る",
+                    "にこり",
+                    "怒り",
+                    "上",
+                    "下",
+                    "前",
+                    "眉頭左",
+                    "眉頭右",
+                    "照れ",
+                    "涙",
+                    "がーん",
+                    "青ざめる",
+                    "髪影消",
+                    "輪郭",
+                    "メガネ",
+                    "みっぱい"
+                };
+
+                foreach (var mmdMorph in mmdMorphs)
+                {
+                    SetFromMmdExpression(mmdMorph, false);
+                }
+            }
+
+            EditorGUILayout.Separator();
+            if (GUILayout.Button(Translator._("component.expression.custom.perfect-sync")))
+            {
+                void SetFromPerfectSyncExpression(string blendShape, bool isBinary)
+                {
+                    // すでに存在していたら無視
+                    if (go.expressionCustomBlendShapes.Exists(x => x.expressionName == blendShape))
+                    {
+                        return;
+                    }
+
+                    var (targetBlendShapeName, skinnedMeshRenderer) = Utility.FindBlendShape(go.gameObject, blendShape);
+
+                    if (string.IsNullOrEmpty(targetBlendShapeName)) // 完全一致
+                    {
+                        return;
+                    }
+
+                    var value = new VrmExpressionProperty
+                    {
+                        baseType = VrmExpressionProperty.BaseType.BlendShape,
+                        gameObject = skinnedMeshRenderer!.gameObject,
+                        blendShapeName = targetBlendShapeName,
+                        expressionName = blendShape,
+                        overrideBlink = vrm.core.ExpressionOverrideType.Block,
+                        overrideLookAt = vrm.core.ExpressionOverrideType.Block,
+                        overrideMouth = vrm.core.ExpressionOverrideType.Block,
+                        isBinary = isBinary,
+                        isPreset = false
+                    };
+
+                    go.expressionCustomBlendShapes.Add(value);
+                }
+
+                var perfectSyncMorphs = new[]
+                {
+                    "browDownLeft",
+                    "browDownRight",
+                    "browInnerUp",
+                    "browOuterUpLeft",
+                    "browOuterUpRight",
+                    "cheekPuff",
+                    "cheekSquintLeft",
+                    "cheekSquintRight",
+                    "eyeBlinkLeft",
+                    "eyeBlinkRight",
+                    "eyeLookDownLeft",
+                    "eyeLookDownRight",
+                    "eyeLookInLeft",
+                    "eyeLookInRight",
+                    "eyeLookOutLeft",
+                    "eyeLookOutRight",
+                    "eyeLookUpLeft",
+                    "eyeLookUpRight",
+                    "eyeSquintLeft",
+                    "eyeSquintRight",
+                    "eyeWideLeft",
+                    "eyeWideRight",
+                    "jawForward",
+                    "jawLeft",
+                    "jawOpen",
+                    "jawRight",
+                    "mouthClose",
+                    "mouthDimpleLeft",
+                    "mouthDimpleRight",
+                    "mouthFrownLeft",
+                    "mouthFrownRight",
+                    "mouthFunnel",
+                    "mouthLeft",
+                    "mouthLowerDownLeft",
+                    "mouthLowerDownRight",
+                    "mouthPressLeft",
+                    "mouthPressRight",
+                    "mouthPucker",
+                    "mouthRight",
+                    "mouthRollLower",
+                    "mouthRollUpper",
+                    "mouthShrugLower",
+                    "mouthShrugUpper",
+                    "mouthSmileLeft",
+                    "mouthSmileRight",
+                    "mouthStretchLeft",
+                    "mouthStretchRight",
+                    "mouthUpperUpLeft",
+                    "mouthUpperUpRight",
+                    "noseSneerLeft",
+                    "noseSneerRight"
+                };
+
+                foreach (var mmdMorph in perfectSyncMorphs)
+                {
+                    SetFromPerfectSyncExpression(mmdMorph, false);
+                }
+            }
+
+            EditorGUILayout.Separator();
+            if (GUILayout.Button(Translator._("component.expression.custom.reset-all")))
+            {
+                go.expressionCustomBlendShapes.Clear();
+            }
         }
 
         private void DrawMToonOptions()

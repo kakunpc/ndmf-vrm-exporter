@@ -222,7 +222,23 @@ namespace com.github.hkrn
                 .Replace("-", "");
 
             var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
-            // それぞれのスキンメッシュを調べる
+
+            // 完全一致検索
+            foreach (var skinnedMesh in skinnedMeshs)
+            {
+                // スキンメッシュのブレンドシェイプインデックスを取得
+                var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
+                for (var i = 0; i < blendShapeCount; ++i)
+                {
+                    var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i);
+                    if (blendShapeNameLower == blendShapeName)
+                    {
+                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
+                    }
+                }
+            }
+
+            // あいまい検索
             foreach (var skinnedMesh in skinnedMeshs)
             {
                 // スキンメッシュのブレンドシェイプインデックスを取得

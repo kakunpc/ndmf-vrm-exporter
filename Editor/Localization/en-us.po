@@ -142,8 +142,17 @@ msgstr "Surprised"
 msgid "component.expression.preset.from-mmd"
 msgstr "Set Preset Expression from MMD Compatible"
 
+msgid "component.expression.custom.mmd"
+msgstr "Custom Expression from MMD Compatible"
+
+msgid "component.expression.custom.perfect-sync"
+msgstr "Custom Expression from PerfectSync"
+
 msgid "component.expression.preset.reset-all"
 msgstr "Reset All Preset Expressions"
+
+msgid "component.expression.custom.reset-all"
+msgstr "Reset All Custom Expressions"
 
 msgid "component.expression.name"
 msgstr "Expression Name"
