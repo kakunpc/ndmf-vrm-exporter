@@ -226,6 +226,11 @@ namespace com.github.hkrn
             // 完全一致検索
             foreach (var skinnedMesh in skinnedMeshs)
             {
+                if(skinnedMesh == null || skinnedMesh.sharedMesh == null)
+                {
+                    continue;
+                }
+
                 // スキンメッシュのブレンドシェイプインデックスを取得
                 var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
                 for (var i = 0; i < blendShapeCount; ++i)
@@ -241,6 +246,11 @@ namespace com.github.hkrn
             // あいまい検索
             foreach (var skinnedMesh in skinnedMeshs)
             {
+                if(skinnedMesh == null || skinnedMesh.sharedMesh == null)
+                {
+                    continue;
+                }
+
                 // スキンメッシュのブレンドシェイプインデックスを取得
                 var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
                 for (var i = 0; i < blendShapeCount; ++i)

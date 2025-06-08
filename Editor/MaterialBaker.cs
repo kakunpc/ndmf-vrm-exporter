@@ -316,7 +316,7 @@ namespace com.github.hkrn
             }
             else if (baseTexture && assetSaver.IsTemporaryAsset(baseTexture))
             {
-                Object.Destroy(srcTexture);
+                Object.DestroyImmediate(srcTexture);
                 var innerBaseTexture = baseTexture!;
                 srcTexture = new Texture2D(innerBaseTexture.width, innerBaseTexture.height);
                 Graphics.ConvertTexture(innerBaseTexture, srcTexture);
