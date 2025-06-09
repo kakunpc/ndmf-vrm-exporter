@@ -70,25 +70,59 @@ namespace com.github.hkrn
 
                     var ro = ctx.AvatarRootObject;
 
-                    // サムネイルがない場合はサムネイルを撮影して適応する
-
-                    if (component.thumbnail == null)
+                    // ブレンドシェイプの重みを一時的に保存してリセット（破綻防止）
+                    var blendShapeWeightBackups = new List<(SkinnedMeshRenderer smr, float[] weights)>();
+                    var allSkinnedMeshRenderers = ro.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                    foreach (var smr in allSkinnedMeshRenderers)
                     {
-                        // thumbnail がない場合は、撮影する
-                        var thumbnail = CreateAvatarThumbnail(ro.GetComponent<VRC_AvatarDescriptor>());
-                        component.thumbnail = thumbnail;
+                        if (smr.sharedMesh == null) continue;
+                        
+                        var blendShapeCount = smr.sharedMesh.blendShapeCount;
+                        var originalWeights = new float[blendShapeCount];
+                        
+                        for (var i = 0; i < blendShapeCount; i++)
+                        {
+                            originalWeights[i] = smr.GetBlendShapeWeight(i);
+                            smr.SetBlendShapeWeight(i, 0f);
+                        }
+                        
+                        blendShapeWeightBackups.Add((smr, originalWeights));
                     }
 
-                    var basePath = AssetPathUtils.GetOutputPath(ro);
-                    Directory.CreateDirectory(basePath);
-                    using var stream = new MemoryStream();
-                    using var exporter = new NdmfVrmExporter(ro, ctx.AssetSaver);
-                    var json = exporter.Export(stream);
-                    var bytes = stream.GetBuffer();
-                    File.WriteAllBytes($"{basePath}.vrm", bytes);
-                    if (component.enableGenerateJsonFile)
+                    string basePath = null;
+                    try
                     {
-                        File.WriteAllText($"{basePath}.json", json);
+                        // サムネイルがない場合はサムネイルを撮影して適応する
+
+                        if (component.thumbnail == null)
+                        {
+                            // thumbnail がない場合は、撮影する
+                            var thumbnail = CreateAvatarThumbnail(ro.GetComponent<VRC_AvatarDescriptor>());
+                            component.thumbnail = thumbnail;
+                        }
+
+                        basePath = AssetPathUtils.GetOutputPath(ro);
+                        Directory.CreateDirectory(basePath);
+                        using var stream = new MemoryStream();
+                        using var exporter = new NdmfVrmExporter(ro, ctx.AssetSaver);
+                        var json = exporter.Export(stream);
+                        var bytes = stream.GetBuffer();
+                        File.WriteAllBytes($"{basePath}.vrm", bytes);
+                        if (component.enableGenerateJsonFile)
+                        {
+                            File.WriteAllText($"{basePath}.json", json);
+                        }
+                    }
+                    finally
+                    {
+                        // ブレンドシェイプの重みを復元
+                        foreach (var (smr, weights) in blendShapeWeightBackups)
+                        {
+                            for (var i = 0; i < weights.Length; i++)
+                            {
+                                smr.SetBlendShapeWeight(i, weights[i]);
+                            }
+                        }
                     }
 
                     if (!component.deleteTemporaryObjects)

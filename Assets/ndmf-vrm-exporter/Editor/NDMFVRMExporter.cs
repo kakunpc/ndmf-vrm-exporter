@@ -743,44 +743,38 @@ namespace com.github.hkrn
             private readonly Transform[] _boneTransforms;
             private readonly Vector3[] _originPositions;
             private readonly Vector3[] _originNormals;
-            private readonly Vector3[] _deltaPositions;
-            private readonly Vector3[] _deltaNormals;
             private readonly Matrix4x4[] _boneMatrices;
             private readonly Matrix4x4[] _bindPoseMatrices;
+            private readonly float[] _originalBlendShapeWeights;
 
             public BoneResolver(Transform parentTransform, SkinnedMeshRenderer skinnedMeshRenderer)
             {
                 var mesh = skinnedMeshRenderer.sharedMesh;
                 var bones = skinnedMeshRenderer.bones;
                 var numBlendShapes = mesh.blendShapeCount;
-                var numPositions = mesh.vertexCount;
-                var blendShapeVertices = new Vector3[numPositions];
-                var blendShapeNormals = new Vector3[numPositions];
+                
+                // ブレンドシェイプの重みを一時的に保存してゼロにリセット
+                _originalBlendShapeWeights = new float[numBlendShapes];
+                for (var i = 0; i < numBlendShapes; i++)
+                {
+                    _originalBlendShapeWeights[i] = skinnedMeshRenderer.GetBlendShapeWeight(i);
+                    skinnedMeshRenderer.SetBlendShapeWeight(i, 0f);
+                }
+
+                // ニュートラル状態での頂点位置と法線を取得
                 _originPositions = mesh.vertices.ToArray();
                 _originNormals = mesh.normals.ToArray();
+                
+                // ブレンドシェイプの重みを復元
+                for (var i = 0; i < numBlendShapes; i++)
+                {
+                    skinnedMeshRenderer.SetBlendShapeWeight(i, _originalBlendShapeWeights[i]);
+                }
+
                 _boneMatrices = bones.Select(bone => bone.localToWorldMatrix).ToArray();
                 _bindPoseMatrices = mesh.bindposes.ToArray();
-                _deltaPositions = new Vector3[numPositions];
-                _deltaNormals = new Vector3[numPositions];
                 _boneTransforms = bones;
                 _inverseParentTransformMatrix = parentTransform.worldToLocalMatrix;
-
-                for (var blendShapeIndex = 0; blendShapeIndex < numBlendShapes; blendShapeIndex++)
-                {
-                    var weight = skinnedMeshRenderer.GetBlendShapeWeight(blendShapeIndex) * 0.01f;
-                    if (!(weight > 0.0))
-                        continue;
-                    mesh.GetBlendShapeFrameVertices(blendShapeIndex, 0, blendShapeVertices, blendShapeNormals, null);
-                    for (var i = 0; i < numPositions; i++)
-                    {
-                        _deltaPositions[i] += blendShapeVertices[i] * weight;
-                    }
-
-                    for (var i = 0; i < numPositions; i++)
-                    {
-                        _deltaNormals[i] += blendShapeNormals[i] * weight;
-                    }
-                }
 
                 foreach (var transform in bones)
                 {
@@ -810,7 +804,8 @@ namespace com.github.hkrn
 
             public System.Numerics.Vector3 ConvertPosition(int index, BoneWeight item)
             {
-                var originPosition = _originPositions[index] + _deltaPositions[index];
+                // ニュートラル状態の頂点位置を使用（ブレンドシェイプの影響を除外）
+                var originPosition = _originPositions[index];
                 var newPosition = Vector3.zero;
                 foreach (var (sourceBoneIndex, weight) in new List<(int, float)>
                          {
@@ -831,7 +826,8 @@ namespace com.github.hkrn
 
             public System.Numerics.Vector3 ConvertNormal(int index, BoneWeight item)
             {
-                var originNormal = _originNormals[index] + _deltaNormals[index];
+                // ニュートラル状態の法線を使用（ブレンドシェイプの影響を除外）
+                var originNormal = _originNormals[index];
                 var newNormal = Vector3.zero;
                 foreach (var (sourceBoneIndex, weight) in new List<(int, float)>
                          {
@@ -845,6 +841,48 @@ namespace com.github.hkrn
                         continue;
                     var sourceMatrix = GetSourceMatrix(sourceBoneIndex);
                     newNormal += sourceMatrix.MultiplyVector(originNormal) * weight;
+                }
+
+                return newNormal.normalized.ToVector3WithCoordinateSpace();
+            }
+
+            public System.Numerics.Vector3 ConvertBlendShapePosition(Vector3 blendShapeVertex, int index, BoneWeight item)
+            {
+                // ブレンドシェイプの変位をボーン変換に適用
+                var newPosition = Vector3.zero;
+                foreach (var (sourceBoneIndex, weight) in new List<(int, float)>
+                         {
+                             (item.boneIndex0, item.weight0),
+                             (item.boneIndex1, item.weight1),
+                             (item.boneIndex2, item.weight2),
+                             (item.boneIndex3, item.weight3)
+                         })
+                {
+                    if (weight == 0)
+                        continue;
+                    var sourceMatrix = GetSourceMatrix(sourceBoneIndex);
+                    newPosition += sourceMatrix.MultiplyVector(blendShapeVertex) * weight;
+                }
+
+                return newPosition.ToVector3WithCoordinateSpace();
+            }
+
+            public System.Numerics.Vector3 ConvertBlendShapeNormal(Vector3 blendShapeNormal, int index, BoneWeight item)
+            {
+                // ブレンドシェイプの法線変位をボーン変換に適用
+                var newNormal = Vector3.zero;
+                foreach (var (sourceBoneIndex, weight) in new List<(int, float)>
+                         {
+                             (item.boneIndex0, item.weight0),
+                             (item.boneIndex1, item.weight1),
+                             (item.boneIndex2, item.weight2),
+                             (item.boneIndex3, item.weight3)
+                         })
+                {
+                    if (weight == 0)
+                        continue;
+                    var sourceMatrix = GetSourceMatrix(sourceBoneIndex);
+                    newNormal += sourceMatrix.MultiplyVector(blendShapeNormal) * weight;
                 }
 
                 return newNormal.normalized.ToVector3WithCoordinateSpace();
@@ -866,9 +904,11 @@ namespace com.github.hkrn
             System.Numerics.Vector3[] positions, normals;
             gltf.exporter.JointUnit[] jointUnits;
             System.Numerics.Vector4[] weights;
+            BoneResolver? resolver = null;
+            
             if (smr)
             {
-                var resolver = new BoneResolver(parentTransform, smr!);
+                resolver = new BoneResolver(parentTransform, smr!);
                 var boneWeights = smr!.sharedMesh.boneWeights;
                 var index = 0;
                 jointUnits = new gltf.exporter.JointUnit[boneWeights.Length];
@@ -933,9 +973,9 @@ namespace com.github.hkrn
                 TexCoords1 = mesh.uv2.Select(item => item.ToVector2WithCoordinateSpace()).ToArray(),
                 Joints = jointUnits,
                 Weights = weights,
-                Tangents = mesh.tangents.Select(item => item.ToVector4WithTangentSpace())
-                    .ToArray(),
+                Tangents = mesh.tangents.Select(item => item.ToVector4WithTangentSpace()).ToArray(),
             };
+
             var enableBakingAlphaMaskTexture = component.enableBakingAlphaMaskTexture;
 
             var numMaterials = materials.Length;
@@ -1082,12 +1122,40 @@ namespace com.github.hkrn
             {
                 var name = mesh.GetBlendShapeName(i);
                 mesh.GetBlendShapeFrameVertices(i, 0, blendShapeVertices, blendShapeNormals, null);
-                meshUnit.MorphTargets.Add(new gltf.exporter.MorphTarget
+                
+                // スキニングメッシュの場合はボーン変換を適用したブレンドシェイプを出力
+                if (smr && resolver != null)
                 {
-                    Name = name,
-                    Positions = blendShapeVertices.Select(item => item.ToVector3WithCoordinateSpace()).ToArray(),
-                    Normals = blendShapeNormals.Select(item => item.ToVector3WithCoordinateSpace()).ToArray(),
-                });
+                    var boneWeights = smr.sharedMesh.boneWeights;
+                    var transformedPositions = new System.Numerics.Vector3[mesh.vertexCount];
+                    var transformedNormals = new System.Numerics.Vector3[mesh.vertexCount];
+                    
+                    for (var vertexIndex = 0; vertexIndex < mesh.vertexCount; vertexIndex++)
+                    {
+                        var boneWeight = boneWeights[vertexIndex];
+                        transformedPositions[vertexIndex] = resolver.ConvertBlendShapePosition(
+                            blendShapeVertices[vertexIndex], vertexIndex, boneWeight);
+                        transformedNormals[vertexIndex] = resolver.ConvertBlendShapeNormal(
+                            blendShapeNormals[vertexIndex], vertexIndex, boneWeight);
+                    }
+                    
+                    meshUnit.MorphTargets.Add(new gltf.exporter.MorphTarget
+                    {
+                        Name = name,
+                        Positions = transformedPositions,
+                        Normals = transformedNormals,
+                    });
+                }
+                else
+                {
+                    // 静的メッシュの場合は座標変換のみ適用
+                    meshUnit.MorphTargets.Add(new gltf.exporter.MorphTarget
+                    {
+                        Name = name,
+                        Positions = blendShapeVertices.Select(item => item.ToVector3WithCoordinateSpace()).ToArray(),
+                        Normals = blendShapeNormals.Select(item => item.ToVector3WithCoordinateSpace()).ToArray(),
+                    });
+                }
             }
 
             node.Mesh = _exporter.CreateMesh(_root, meshUnit);
