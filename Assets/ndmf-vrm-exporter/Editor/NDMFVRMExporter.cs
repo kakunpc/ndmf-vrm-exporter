@@ -437,47 +437,95 @@ namespace com.github.hkrn
                     vrcConstraint.Sources.Count >= 1)
                 {
                     var source = vrcConstraint.Sources.First();
+                    if (source.SourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or SourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.SourceTransform.transform;
                 }
                 else if (transform.TryGetComponent<IConstraint>(out var constraint) && constraint.sourceCount >= 1)
                 {
                     var source = constraint.GetSource(0);
+                    if (source.sourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or sourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.sourceTransform;
                 }
                 else if (transform.TryGetComponent<VRCAimConstraint>(out var vrcAimConstraint) &&
                          vrcAimConstraint.Sources.Count == 1)
                 {
                     var source = vrcAimConstraint.Sources.First();
+                    if (source.SourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or SourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.SourceTransform.transform;
                 }
                 else if (transform.TryGetComponent<AimConstraint>(out var aimConstraint) &&
                          aimConstraint.sourceCount == 1)
                 {
                     var source = aimConstraint.GetSource(0);
+                    if (source.sourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or sourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.sourceTransform;
                 }
                 else if (transform.TryGetComponent<VRCRotationConstraint>(out var vrcRotationConstraint) &&
                          vrcRotationConstraint.Sources.Count >= 1)
                 {
                     var source = vrcRotationConstraint.Sources.First();
+                    if (source.SourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or SourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.SourceTransform;
                 }
                 else if (transform.TryGetComponent<RotationConstraint>(out var rotationConstraint) &&
                          rotationConstraint.sourceCount == 1)
                 {
                     var source = rotationConstraint.GetSource(0);
+                    if (source.sourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or sourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.sourceTransform;
                 }
                 else if (transform.TryGetComponent<VRCPositionConstraint>(out var vrcPositionConstraint) &&
                          vrcPositionConstraint.Sources.Count >= 1)
                 {
                     var source = vrcPositionConstraint.Sources.First();
+                    if (source.SourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or SourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.SourceTransform;
                 }
                 else if (transform.TryGetComponent<PositionConstraint>(out var positionConstraint) &&
                          positionConstraint.sourceCount >= 1)
                 {
                     var source = positionConstraint.GetSource(0);
+                    if (source.sourceTransform == null)
+                    {
+                        Debug.LogWarning("Source or sourceTransform is null. Skipping this constraint.");
+                        continue;
+                    }
+
                     constraintTransforms[transform] = source.sourceTransform;
                 }
             }
