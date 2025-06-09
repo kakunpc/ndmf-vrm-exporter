@@ -39,7 +39,8 @@ NDMF VRM Exporter には以下の特徴を持っています。
 
 まず [VRChat Creator Companion](https://vcc.docs.vrchat.com) または [ALCOM](https://vrc-get.anatawa12.com/alcom/) を事前にインストールします。その後 [レポジトリ追加のリンク](https://kakunpc.github.io/kakunpc_vpm/) をクリックしてレポジトリを導入します。手動で登録する場合は `https://kakunpc.github.io/kakunpc_vpm/index.json` を指定します。
 
-レポジトリ導入後は `NDMF VRM Exporter(kakunvr fork)` を検索してインストールすることで利用可能になります。
+レポジトリ導入後は `NDMF VRM Exporter(kakunvr fork)` を検索してインストールすることで利用可能になります。  
+表示されない場合は、「プレリリース版のパッケージを表示する」にチェックを入れてください。
 
 ## 使い方
 
