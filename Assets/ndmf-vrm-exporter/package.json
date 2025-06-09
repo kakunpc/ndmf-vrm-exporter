@@ -1,0 +1,17 @@
+{
+  "name": "com.kakunpc.ndmf-vrm-exporter",
+  "displayName": "NDMF VRM Exporter(kakunvr fork)",
+  "version": "1.0.10",
+  "unity": "2022.3",
+  "description": "NDMF Plugin to export the avatar as VRM 1.0 model.",
+  "author": {
+    "name": "kakunpc",
+    "url": "https://github.com/kakunpc"
+  },
+  "url": "https://github.com/kakunpc/ndmf-vrm-exporter",
+  "repo": "https://kakunpc.github.io/kakunpc_vpm/index.json",
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.7.0",
+    "nadena.dev.ndmf": ">=1.6.0 < 2.0.0"
+  }
+}

@@ -1,0 +1,42 @@
+name: ReleaseBuild
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  activation:
+    name: ReleaseBuild
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set output
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+      # package.jsonのバージョン値を書き換える
+      - name: Change Version
+        env:
+          VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          sed -i -e "s/\"version\": \".*\"/\"version\": \"$VERSION\"/g" Assets/ndmf-vrm-exporter/package.json
+          mkdir output
+
+      - name: Create VCC Package
+        env:
+          VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          cp -y LICENSE.MPL Assets/ndmf-vrm-exporter/
+          cp -y README.md Assets/ndmf-vrm-exporter/
+          cp -y CHANGELOG.md Assets/ndmf-vrm-exporter/
+          cd Assets/ndmf-vrm-exporter
+          zip -r ../../../output/com.kakunvr.ndmf-vrm-exporter-$VERSION.zip *
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          files: |
+            output/*

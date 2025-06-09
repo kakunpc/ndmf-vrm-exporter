@@ -1,4 +1,23 @@
-# NDMF VRM Exporter
+# NDMF VRM Exporter(kakunvr Fork)
+
+このリポジトリは [NDMF VRM Exporter](https://github.com/hkrn/ndmf-vrm-exporter) のフォークリポジトリです。
+
+NDMF VRM Exporterとの違いは以下の通りです。
+
+- VRMConstraintの循環参照検知
+  - pixiv/three-vrm を使用しているプロジェクトではVRMConstraintの循環参照をチェックしており、生成されたVRMが読み込めない可能性があります。
+  - その問題の解決として循環参照をチェックし、循環参照がある場合はそのConstraintを出力しないようにしました。
+- サムネイルの自動撮影
+  - サムネイルが未指定の場合は、簡易的に自動的に撮影するようにしてあります。
+- ブレンドシェイプの自動カスタム設定
+  - MMD互換のブレンドシェイプをVRMブレンドシェイプとして自動登録できるボタンを追加しました。
+  - PerfectSync（52BlendShape）と同名のブレンドシェイプが存在する場合は自動登録できるボタンを追加しました。
+- テスクチャベイク時の解像度問題を修正
+  - 元の解像度が大きいテクスチャをベイクする際にUnityの設定を無視して元の解像度で出力されていたのを、Unityの設定に従うようにしました。
+
+その他、変更がしやすいようにコードを分割してあります。このコードも基本的にはフォーク元のコードのライセンスに従い、「Mozilla Public License 2.0」となります。
+
+-----
 
 VRChat のアバターを VRM 1.0 形式で変換し出力する [Modular Avatar](https://modular-avatar.nadena.dev/) で使われている基盤フレームワークである [NDMF](https://ndmf.nadena.dev) に基づくプラグインです。
 
@@ -18,9 +37,9 @@ NDMF VRM Exporter には以下の特徴を持っています。
 
 ## 導入方法
 
-まず [VRChat Creator Companion](https://vcc.docs.vrchat.com) または [ALCOM](https://vrc-get.anatawa12.com/alcom/) を事前にインストールします。その後 [レポジトリ追加のリンク](https://hkrn.github.io/vpm.html) をクリックしてレポジトリを導入します。手動で登録する場合は `https://hkrn.github.io/vpm.json` を指定します。
+まず [VRChat Creator Companion](https://vcc.docs.vrchat.com) または [ALCOM](https://vrc-get.anatawa12.com/alcom/) を事前にインストールします。その後 [レポジトリ追加のリンク](https://kakunpc.github.io/kakunpc_vpm/) をクリックしてレポジトリを導入します。手動で登録する場合は `https://kakunpc.github.io/kakunpc_vpm/index.json` を指定します。
 
-レポジトリ導入後は `NDMF VRM Exporter` を検索してインストールすることで利用可能になります。
+レポジトリ導入後は `NDMF VRM Exporter(kakunvr fork)` を検索してインストールすることで利用可能になります。
 
 ## 使い方
 
