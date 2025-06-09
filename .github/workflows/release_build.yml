@@ -27,9 +27,9 @@ jobs:
         env:
           VERSION: ${{ steps.vars.outputs.tag }}
         run: |
-          cp -y LICENSE.MPL Assets/ndmf-vrm-exporter/
-          cp -y README.md Assets/ndmf-vrm-exporter/
-          cp -y CHANGELOG.md Assets/ndmf-vrm-exporter/
+          cp -f LICENSE.MPL Assets/ndmf-vrm-exporter/
+          cp -f README.md Assets/ndmf-vrm-exporter/
+          cp -f CHANGELOG.md Assets/ndmf-vrm-exporter/
           cd Assets/ndmf-vrm-exporter
           zip -r ../../../output/com.kakunvr.ndmf-vrm-exporter-$VERSION.zip *
 
