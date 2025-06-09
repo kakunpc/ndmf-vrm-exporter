@@ -2693,9 +2693,14 @@ namespace com.github.hkrn
                         var (upperDepth, lowerDepth) = FindTransformDepth(transform, rootTransform);
                         var depthRatio = upperDepth / (float)(upperDepth + lowerDepth);
                         var evaluate = new Func<float, AnimationCurve, float>((value, curve) =>
-                            curve.length > 0
-                                ? curve.Evaluate(depthRatio) * value
-                                : value);
+                        {
+                            if (curve == null || curve.length == 0)
+                            {
+                                return value;
+                            }
+
+                            return curve.Evaluate(depthRatio) * value;
+                        });
                         var gravity = evaluate(pb.gravity, pb.gravityCurve);
                         var stiffness = evaluate(pb.stiffness, pb.stiffnessCurve);
                         var hitRadius = evaluate(pb.radius, pb.radiusCurve);
