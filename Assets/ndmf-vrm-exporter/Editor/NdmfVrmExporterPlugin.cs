@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
+using UnityEditor;
 
 #if NVE_HAS_VRCHAT_AVATAR_SDK
 using VRC.SDK3.Avatars.Components;
@@ -76,16 +77,16 @@ namespace com.github.hkrn
                     foreach (var smr in allSkinnedMeshRenderers)
                     {
                         if (smr.sharedMesh == null) continue;
-                        
+
                         var blendShapeCount = smr.sharedMesh.blendShapeCount;
                         var originalWeights = new float[blendShapeCount];
-                        
+
                         for (var i = 0; i < blendShapeCount; i++)
                         {
                             originalWeights[i] = smr.GetBlendShapeWeight(i);
                             smr.SetBlendShapeWeight(i, 0f);
                         }
-                        
+
                         blendShapeWeightBackups.Add((smr, originalWeights));
                     }
 
@@ -142,6 +143,8 @@ namespace com.github.hkrn
                             /* this is ignorable */
                         }
                     }
+
+                    AssetDatabase.Refresh();
                 });
         }
 
