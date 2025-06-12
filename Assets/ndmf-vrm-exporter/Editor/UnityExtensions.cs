@@ -214,12 +214,16 @@ namespace com.github.hkrn
     {
         public static (string, SkinnedMeshRenderer?) FindBlendShape(GameObject root, string blendShapeName)
         {
+            string GetBlendShapeName(string name)
+            {
+                return name.ToLower()
+                    .Replace("_", "")
+                    .Replace(" ", "")
+                    .Replace("-", "");
+            }
+
             // skinned mesh listを取得
-            var targetShapeName = blendShapeName
-                .ToLower()
-                .Replace("_", "")
-                .Replace(" ", "")
-                .Replace("-", "");
+            var targetShapeName = GetBlendShapeName(blendShapeName);
 
             var skinnedMeshs = root.GetComponentsInChildren<SkinnedMeshRenderer>();
 
@@ -243,7 +247,7 @@ namespace com.github.hkrn
                 }
             }
 
-            // あいまい検索
+            // 小文字化とスペース、アンダースコア、ハイフンの削除を行った完全一致検索
             foreach (var skinnedMesh in skinnedMeshs)
             {
                 if(skinnedMesh == null || skinnedMesh.sharedMesh == null)
@@ -255,11 +259,27 @@ namespace com.github.hkrn
                 var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
                 for (var i = 0; i < blendShapeCount; ++i)
                 {
-                    var blendShapeNameLower = skinnedMesh.sharedMesh.GetBlendShapeName(i)
-                        .ToLower()
-                        .Replace("_", "")
-                        .Replace(" ", "")
-                        .Replace("-", "");
+                    var blendShapeNameLower = GetBlendShapeName(skinnedMesh.sharedMesh.GetBlendShapeName(i));
+                    if (blendShapeNameLower == targetShapeName)
+                    {
+                        return (skinnedMesh.sharedMesh.GetBlendShapeName(i), skinnedMesh);
+                    }
+                }
+            }
+
+            // それでも見つからない場合はあいまい検索
+            foreach (var skinnedMesh in skinnedMeshs)
+            {
+                if(skinnedMesh == null || skinnedMesh.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                // スキンメッシュのブレンドシェイプインデックスを取得
+                var blendShapeCount = skinnedMesh.sharedMesh.blendShapeCount;
+                for (var i = 0; i < blendShapeCount; ++i)
+                {
+                    var blendShapeNameLower = GetBlendShapeName(skinnedMesh.sharedMesh.GetBlendShapeName(i));
                     if (blendShapeNameLower.IndexOf(targetShapeName, StringComparison.Ordinal) < 0)
                     {
                         continue;

@@ -591,12 +591,12 @@ namespace com.github.hkrn
             EditorGUILayout.Separator();
             if (GUILayout.Button(Translator._("component.expression.custom.mmd")))
             {
-                void SetFromMmdExpression(string blendShape, bool isBinary)
+                bool SetFromMmdExpression(string blendShape, bool isBinary)
                 {
                     // すでに存在していたら無視
                     if (go.expressionCustomBlendShapes.Exists(x => x.expressionName == blendShape))
                     {
-                        return;
+                        return true;
                     }
 
                     var (targetBlendShapeName, skinnedMeshRenderer) = Utility.FindBlendShape(go.gameObject, blendShape);
@@ -604,7 +604,7 @@ namespace com.github.hkrn
                     if (string.IsNullOrEmpty(targetBlendShapeName) ||
                         targetBlendShapeName != blendShape) // 完全一致
                     {
-                        return;
+                        return false;
                     }
 
 
@@ -622,6 +622,7 @@ namespace com.github.hkrn
                     };
 
                     go.expressionCustomBlendShapes.Add(value);
+                    return true;
                 }
 
                 var mmdMorphs = new[]
@@ -689,28 +690,44 @@ namespace com.github.hkrn
                     "みっぱい"
                 };
 
-                foreach (var mmdMorph in mmdMorphs)
+                var oldLength = go.expressionCustomBlendShapes.Count;
+                List<string> failedMorphs = new List<string>();
+
+                foreach (var morph in mmdMorphs)
                 {
-                    SetFromMmdExpression(mmdMorph, false);
+                    if (!SetFromMmdExpression(morph, false))
+                    {
+                        failedMorphs.Add(morph);
+                    }
+                }
+
+                var newLength = go.expressionCustomBlendShapes.Count;
+                if (newLength - oldLength != 0)
+                {
+                    Debug.LogWarning($"Failed to set {mmdMorphs.Length} expressions from MMD. " +
+                                     $"Only {newLength - oldLength} expressions were added." +
+                                     (failedMorphs.Count > 0
+                                         ? $" Failed morphs: {string.Join(", ", failedMorphs)}"
+                                         : ""));
                 }
             }
 
             EditorGUILayout.Separator();
             if (GUILayout.Button(Translator._("component.expression.custom.perfect-sync")))
             {
-                void SetFromPerfectSyncExpression(string blendShape, bool isBinary)
+                bool SetFromPerfectSyncExpression(string blendShape, bool isBinary)
                 {
                     // すでに存在していたら無視
                     if (go.expressionCustomBlendShapes.Exists(x => x.expressionName == blendShape))
                     {
-                        return;
+                        return true;
                     }
 
                     var (targetBlendShapeName, skinnedMeshRenderer) = Utility.FindBlendShape(go.gameObject, blendShape);
 
-                    if (string.IsNullOrEmpty(targetBlendShapeName)) // 完全一致
+                    if (string.IsNullOrEmpty(targetBlendShapeName))
                     {
-                        return;
+                        return false;
                     }
 
                     var value = new VrmExpressionProperty
@@ -727,6 +744,7 @@ namespace com.github.hkrn
                     };
 
                     go.expressionCustomBlendShapes.Add(value);
+                    return true;
                 }
 
                 var perfectSyncMorphs = new[]
@@ -781,12 +799,29 @@ namespace com.github.hkrn
                     "mouthUpperUpLeft",
                     "mouthUpperUpRight",
                     "noseSneerLeft",
-                    "noseSneerRight"
+                    "noseSneerRight",
+                    "tongueOut"
                 };
 
-                foreach (var mmdMorph in perfectSyncMorphs)
+                    var oldLength = go.expressionCustomBlendShapes.Count;
+                    List<string> failedMorphs = new List<string>();
+
+                foreach (var morph in perfectSyncMorphs)
                 {
-                    SetFromPerfectSyncExpression(mmdMorph, false);
+                    if (!SetFromPerfectSyncExpression(morph, false))
+                    {
+                        failedMorphs.Add(morph);
+                    }
+                }
+
+                var newLength = go.expressionCustomBlendShapes.Count;
+                if (newLength - oldLength != 0)
+                {
+                    Debug.LogWarning($"Failed to set {perfectSyncMorphs.Length} expressions from Perfect Sync. " +
+                                     $"Only {newLength - oldLength} expressions were added." +
+                                     (failedMorphs.Count > 0
+                                         ? $" Failed morphs: {string.Join(", ", failedMorphs)}"
+                                         : ""));
                 }
             }
 
