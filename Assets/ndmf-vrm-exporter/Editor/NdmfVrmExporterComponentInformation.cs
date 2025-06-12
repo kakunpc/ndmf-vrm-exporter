@@ -69,13 +69,14 @@ namespace com.github.hkrn
                         continue;
                     }
 
+                    if (!collectorProperties.ContainsKey(smr))
+                    {
+                        collectorProperties.Add(smr, new List<string>());
+                    }
+
                     if (collectorProperties.TryGetValue(smr, out var names))
                     {
                         names.Add($"blendShape.{name}");
-                    }
-                    else
-                    {
-                        collectorProperties.Add(smr, new List<string>());
                     }
                 }
 
