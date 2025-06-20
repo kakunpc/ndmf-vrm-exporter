@@ -53,13 +53,35 @@ namespace com.github.hkrn
                     allExpressionUsedBlendShapeNames.AddRange(property.BlendShapeNames);
                 }
 
-                // 探した
-                var blink = Utility.FindBlendShape(component.gameObject, "Blink");
-                if (blink.Item2 != null) allExpressionUsedBlendShapeNames.Add(blink.Item1);
-                var blinkLeft = Utility.FindBlendShape(component.gameObject, "BlinkL");
-                if (blinkLeft.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkLeft.Item1);
-                var blinkRight = Utility.FindBlendShape(component.gameObject, "BlinkR");
-                if (blinkRight.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkRight.Item1);
+                if (component.blink?.IsAutomatic ?? true)
+                {
+                    var blink = Utility.FindBlendShape(component.gameObject, "Blink");
+                    if (blink.Item2 != null) allExpressionUsedBlendShapeNames.Add(blink.Item1);
+                }
+                else
+                {
+                    allExpressionUsedBlendShapeNames.Add(component.blink!.BlendShapeName);
+                }
+
+                if (component.blinkL?.IsAutomatic ?? true)
+                {
+                    var blinkLeft = Utility.FindBlendShape(component.gameObject, "BlinkL");
+                    if (blinkLeft.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkLeft.Item1);
+                }
+                else
+                {
+                    allExpressionUsedBlendShapeNames.Add(component.blinkL!.BlendShapeName);
+                }
+
+                if (component.blinkR?.IsAutomatic ?? true)
+                {
+                    var blinkRight = Utility.FindBlendShape(component.gameObject, "BlinkR");
+                    if (blinkRight.Item2 != null) allExpressionUsedBlendShapeNames.Add(blinkRight.Item1);
+                }
+                else
+                {
+                    allExpressionUsedBlendShapeNames.Add(component.blinkR!.BlendShapeName);
+                }
 
                 var collectorProperties = new Dictionary<SkinnedMeshRenderer, IList<string>>();
                 foreach (var name in allExpressionUsedBlendShapeNames)

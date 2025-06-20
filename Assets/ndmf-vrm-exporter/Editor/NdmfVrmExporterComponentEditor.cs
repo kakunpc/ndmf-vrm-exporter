@@ -71,6 +71,9 @@ namespace com.github.hkrn
         private SerializedProperty _ktxToolPathProp = null!;
         private SerializedProperty _metadataModeSelection = null!;
         private SerializedProperty _expressionModeSelection = null!;
+        private SerializedProperty _blinkProp = null!;
+        private SerializedProperty _blinkLProp = null!;
+        private SerializedProperty _blinkRProp = null!;
 #if NVE_HAS_VRCHAT_AVATAR_SDK
         private struct VRChatAvatarToMetadata
         {
@@ -166,6 +169,9 @@ namespace com.github.hkrn
                 serializedObject.FindProperty(nameof(NdmfVrmExporterComponent.metadataModeSelection));
             _expressionModeSelection =
                 serializedObject.FindProperty(nameof(NdmfVrmExporterComponent.expressionModeSelection));
+            _blinkProp = serializedObject.FindProperty(nameof(NdmfVrmExporterComponent.blink));
+            _blinkLProp = serializedObject.FindProperty(nameof(NdmfVrmExporterComponent.blinkL));
+            _blinkRProp = serializedObject.FindProperty(nameof(NdmfVrmExporterComponent.blinkR));
             var component = (NdmfVrmExporterComponent)target;
             component.expressionPresetHappyBlendShape.gameObject = component.gameObject;
             component.expressionPresetAngryBlendShape.gameObject = component.gameObject;
@@ -520,6 +526,19 @@ namespace com.github.hkrn
 
         private void DrawPresetExpressions()
         {
+            {
+                using var _ = new EditorGUILayout.VerticalScope(EditorStyles.helpBox);
+                DrawPropertyField("Blink", _blinkProp);
+            }
+            {
+                using var _ = new EditorGUILayout.VerticalScope(EditorStyles.helpBox);
+                DrawPropertyField("Blink Left", _blinkLProp);
+            }
+            {
+                using var _ = new EditorGUILayout.VerticalScope(EditorStyles.helpBox);
+                DrawPropertyField("Blink Right", _blinkRProp);
+            }
+
             {
                 using var _ = new EditorGUILayout.VerticalScope(EditorStyles.helpBox);
                 DrawPropertyField(Translator._("component.expression.preset.happy"), _expressionPresetHappyBlendShape);

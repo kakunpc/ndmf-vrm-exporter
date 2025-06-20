@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using com.github.hkrn.vrm.core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -752,7 +753,7 @@ namespace com.github.hkrn
                 var mesh = skinnedMeshRenderer.sharedMesh;
                 var bones = skinnedMeshRenderer.bones;
                 var numBlendShapes = mesh.blendShapeCount;
-                
+
                 // ブレンドシェイプの重みを一時的に保存してゼロにリセット
                 _originalBlendShapeWeights = new float[numBlendShapes];
                 for (var i = 0; i < numBlendShapes; i++)
@@ -764,7 +765,7 @@ namespace com.github.hkrn
                 // ニュートラル状態での頂点位置と法線を取得
                 _originPositions = mesh.vertices.ToArray();
                 _originNormals = mesh.normals.ToArray();
-                
+
                 // ブレンドシェイプの重みを復元
                 for (var i = 0; i < numBlendShapes; i++)
                 {
@@ -905,7 +906,7 @@ namespace com.github.hkrn
             gltf.exporter.JointUnit[] jointUnits;
             System.Numerics.Vector4[] weights;
             BoneResolver? resolver = null;
-            
+
             if (smr)
             {
                 resolver = new BoneResolver(parentTransform, smr!);
@@ -1122,14 +1123,14 @@ namespace com.github.hkrn
             {
                 var name = mesh.GetBlendShapeName(i);
                 mesh.GetBlendShapeFrameVertices(i, 0, blendShapeVertices, blendShapeNormals, null);
-                
+
                 // スキニングメッシュの場合はボーン変換を適用したブレンドシェイプを出力
                 if (smr && resolver != null)
                 {
                     var boneWeights = smr.sharedMesh.boneWeights;
                     var transformedPositions = new System.Numerics.Vector3[mesh.vertexCount];
                     var transformedNormals = new System.Numerics.Vector3[mesh.vertexCount];
-                    
+
                     for (var vertexIndex = 0; vertexIndex < mesh.vertexCount; vertexIndex++)
                     {
                         var boneWeight = boneWeights[vertexIndex];
@@ -1138,7 +1139,7 @@ namespace com.github.hkrn
                         transformedNormals[vertexIndex] = resolver.ConvertBlendShapeNormal(
                             blendShapeNormals[vertexIndex], vertexIndex, boneWeight);
                     }
-                    
+
                     meshUnit.MorphTargets.Add(new gltf.exporter.MorphTarget
                     {
                         Name = name,
@@ -2210,6 +2211,21 @@ namespace com.github.hkrn
                     Debug.LogWarning("Preset Surprised will be skipped due to expression is not set properly");
                 }
 
+                if (!(component.blink?.IsAutomatic ?? true))
+                {
+                    core.Expressions.Preset.Blink = ExportBlendshape(component.blink!);
+                }
+
+                if (!(component.blinkL?.IsAutomatic ?? true))
+                {
+                    core.Expressions.Preset.BlinkLeft = ExportBlendshape(component.blinkL!);
+                }
+
+                if (!(component.blinkR?.IsAutomatic ?? true))
+                {
+                    core.Expressions.Preset.BlinkRight = ExportBlendshape(component.blinkR!);
+                }
+
                 var offset = 0;
                 foreach (var property in component.expressionCustomBlendShapes)
                 {
@@ -2227,6 +2243,36 @@ namespace com.github.hkrn
                     core.Expressions.Custom ??= new Dictionary<gltf.UnicodeString, vrm.core.ExpressionItem>();
                     core.Expressions.Custom.Add(new gltf.UnicodeString(property.CanonicalExpressionName), item);
                 }
+            }
+
+            private ExpressionItem? ExportBlendshape(BlendShapeSelectProperty blendShape)
+            {
+                var skinnedMesh = blendShape.MeshRenderer;
+                var blendShapeNameFound = blendShape.BlendShapeName;
+
+                var blendShapeIndex = skinnedMesh.sharedMesh.GetBlendShapeIndex(blendShapeNameFound);
+
+                // ノードIDを取得
+                var nodeId = FindTransformNodeID(skinnedMesh.transform);
+                if (!nodeId.HasValue)
+                {
+                    Debug.LogWarning($"Skinned mesh {skinnedMesh} not found due to inactive");
+                    return null;
+                }
+
+                // vrm.core.ExpressionItemを作成
+                return new vrm.core.ExpressionItem
+                {
+                    MorphTargetBinds = new List<vrm.core.MorphTargetBind>
+                    {
+                        new()
+                        {
+                            Node = nodeId.Value,
+                            Index = new gltf.ObjectID((uint)blendShapeIndex),
+                            Weight = 1.0f,
+                        }
+                    }
+                };
             }
 
 #if NVE_HAS_VRCHAT_AVATAR_SDK

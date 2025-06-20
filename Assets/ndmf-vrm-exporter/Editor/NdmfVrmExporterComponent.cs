@@ -128,6 +128,10 @@ namespace com.github.hkrn
 
         [NotKeyable] [SerializeField] internal int expressionModeSelection;
 
+        [NotKeyable] [SerializeField] internal BlendShapeSelectProperty? blink;
+        [NotKeyable] [SerializeField] internal BlendShapeSelectProperty? blinkL;
+        [NotKeyable] [SerializeField] internal BlendShapeSelectProperty? blinkR;
+
         public bool HasAuthor => authors.Count > 0 && !string.IsNullOrWhiteSpace(authors.First());
 
         public bool HasLicenseUrl =>
