@@ -633,9 +633,9 @@ namespace com.github.hkrn
                         gameObject = skinnedMeshRenderer!.gameObject,
                         blendShapeName = targetBlendShapeName,
                         expressionName = blendShape,
-                        overrideBlink = vrm.core.ExpressionOverrideType.Block,
-                        overrideLookAt = vrm.core.ExpressionOverrideType.Block,
-                        overrideMouth = vrm.core.ExpressionOverrideType.Block,
+                        overrideBlink = vrm.core.ExpressionOverrideType.None,
+                        overrideLookAt = vrm.core.ExpressionOverrideType.None,
+                        overrideMouth = vrm.core.ExpressionOverrideType.None,
                         isBinary = isBinary,
                         isPreset = false
                     };
@@ -755,9 +755,9 @@ namespace com.github.hkrn
                         gameObject = skinnedMeshRenderer!.gameObject,
                         blendShapeName = targetBlendShapeName,
                         expressionName = blendShape,
-                        overrideBlink = vrm.core.ExpressionOverrideType.Block,
-                        overrideLookAt = vrm.core.ExpressionOverrideType.Block,
-                        overrideMouth = vrm.core.ExpressionOverrideType.Block,
+                        overrideBlink = vrm.core.ExpressionOverrideType.None,
+                        overrideLookAt = vrm.core.ExpressionOverrideType.None,
+                        overrideMouth = vrm.core.ExpressionOverrideType.None,
                         isBinary = isBinary,
                         isPreset = false
                     };

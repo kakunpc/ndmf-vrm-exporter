@@ -137,6 +137,13 @@ namespace com.github.hkrn
                         {
                             var info = new DirectoryInfo(item);
                             info.Delete(true);
+
+                            // もし .meta ファイルがあれば削除
+                            var metaFile = $"{item}.meta";
+                            if (File.Exists(metaFile))
+                            {
+                                File.Delete(metaFile);
+                            }
                         }
                         catch (DirectoryNotFoundException)
                         {
