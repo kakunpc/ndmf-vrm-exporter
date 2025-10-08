@@ -1843,6 +1843,9 @@ namespace com.github.hkrn
             {
                 var animator = _gameObject.GetComponent<Animator>();
                 var hb = core.Humanoid.HumanBones;
+#if NVE_HAS_VRCHAT_AVATAR_SDK
+                var avatarDescriptor = _gameObject.GetComponent<VRCAvatarDescriptor>();
+#endif
                 hb.Hips.Node = GetRequiredHumanBoneNodeID(animator, HumanBodyBones.Hips);
                 hb.Spine.Node = GetRequiredHumanBoneNodeID(animator, HumanBodyBones.Spine);
                 var chest = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.Chest);
@@ -1864,17 +1867,48 @@ namespace com.github.hkrn
                 }
 
                 hb.Head.Node = GetRequiredHumanBoneNodeID(animator, HumanBodyBones.Head);
-                var leftEye = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.LeftEye);
-                if (leftEye.HasValue)
+#if NVE_HAS_VRCHAT_AVATAR_SDK
+                if (avatarDescriptor != null && avatarDescriptor.enableEyeLook)
                 {
-                    hb.LeftEye = new vrm.core.HumanBone { Node = leftEye.Value };
-                }
+                    var settings = avatarDescriptor.customEyeLookSettings;
+                    var left = settings.leftEye;
+                    var right = settings.rightEye;
 
-                var rightEye = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.RightEye);
-                if (rightEye.HasValue)
-                {
-                    hb.RightEye = new vrm.core.HumanBone { Node = rightEye.Value };
+                    if (left != null)
+                    {
+                        var leftEyeNodeID = FindTransformNodeID(left);
+                        if (leftEyeNodeID.HasValue)
+                        {
+                            hb.LeftEye = new vrm.core.HumanBone { Node = leftEyeNodeID.Value };
+                        }
+                    }
+
+                    if (right != null)
+                    {
+                        var rightEyeNodeID = FindTransformNodeID(right);
+                        if (rightEyeNodeID.HasValue)
+                        {
+                            hb.RightEye = new vrm.core.HumanBone { Node = rightEyeNodeID.Value };
+                        }
+                    }
                 }
+                else
+                {
+#endif
+                    var leftEye = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.LeftEye);
+                    if (leftEye.HasValue)
+                    {
+                        hb.LeftEye = new vrm.core.HumanBone { Node = leftEye.Value };
+                    }
+
+                    var rightEye = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.RightEye);
+                    if (rightEye.HasValue)
+                    {
+                        hb.RightEye = new vrm.core.HumanBone { Node = rightEye.Value };
+                    }
+#if NVE_HAS_VRCHAT_AVATAR_SDK
+                }
+#endif
 
                 var jaw = GetOptionalHumanBoneNodeID(animator, HumanBodyBones.Jaw);
                 if (jaw.HasValue)
